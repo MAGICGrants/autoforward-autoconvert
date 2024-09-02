@@ -4,36 +4,14 @@ from time import sleep
 from datetime import datetime
 from requests.auth import HTTPDigestAuth
 
+from helpers import *
+
 BITCOIN_RPC_URL = os.getenv('BITCOIN_RPC_URL')
 BITCOIN_RPC_USERNAME = os.getenv('BITCOIN_RPC_USERNAME')
 BITCOIN_RPC_PASSWORD = os.getenv('BITCOIN_RPC_PASSWORD')
 MONERO_RPC_URL = os.getenv('MONERO_RPC_URL')
 MONERO_RPC_USERNAME = os.getenv('MONERO_RPC_USERNAME')
 MONERO_RPC_PASSWORD = os.getenv('MONERO_RPC_PASSWORD')
-KRAKEN_API_KEY = os.getenv('KRAKEN_API_KEY')
-KRAKEN_API_SECRET = os.getenv('KRAKEN_API_SECRET')
-
-def get_time() -> str:
-    return f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]'
-
-def get_kraken_signature(url: str, payload: dict):
-    postdata = urllib.parse.urlencode(payload)
-    encoded = (str(payload['nonce']) + postdata).encode()
-    message = url.encode() + hashlib.sha256(encoded).digest()
-    mac = hmac.new(base64.b64decode(KRAKEN_API_SECRET), message, hashlib.sha512)
-    sigdigest = base64.b64encode(mac.digest())
-    return sigdigest.decode()
-
-def kraken_request(path: str, payload: dict) -> requests.Request:
-    headers = {}
-    headers['API-Key'] = KRAKEN_API_KEY
-    headers['API-Sign'] = get_kraken_signature(path, payload)             
-    
-    return requests.post(
-        'https://api.kraken.com/0' + path,
-        headers=headers,
-        data=payload
-    ).json()['result']
 
 def request_bitcoin_rpc(method: str, params: list[str] = []) -> any:
     headers = {'content-type': 'application/json'}
@@ -99,7 +77,7 @@ def get_new_kraken_address(asset: 'XBT' | 'XMR') -> str:
         'method': 'Bitcoin' if asset == 'XBT' else 'Monero'
     }
 
-    result = kraken_request('/private/DepositAddresses', payload)
+    result = kraken_request('/0/private/DepositAddresses', payload)
     adddress = next((address['address'] for address in result['result'] if address['new']), None)
 
     return address
