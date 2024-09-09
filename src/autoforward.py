@@ -1,5 +1,6 @@
 from typing import Literal, cast
 from time import sleep
+import traceback
 import requests
 import json
 
@@ -11,7 +12,7 @@ def get_bitcoin_fee_rate() -> int:
     return requests.get('https://mempool.space/api/v1/fees/recommended').json()['halfHourFee']
 
 def open_bitcoin_wallet():
-    util.request_electrum_rpc('open_wallet')
+    util.request_electrum_rpc('load_wallet')
 
 def set_bitcoin_fee_rate(rate: int):
     util.request_electrum_rpc('setconfig', ['dynamic_fees', False])
@@ -27,8 +28,7 @@ def create_psbt(destination_address: str) -> str:
         'unsigned': True # This way we can get the input amounts
     }
 
-    response = util.request_electrum_rpc('payto', params)
-    return response['result']
+    return util.request_electrum_rpc('payto', params)
 
 def get_psbt_data(psbt: str) -> dict:
     return util.request_electrum_rpc('deserialize', [psbt])
@@ -77,7 +77,7 @@ def get_new_kraken_address(asset: Literal['XBT', 'XMR']) -> str:
 
     result = util.kraken_request('/0/private/DepositAddresses', payload)
 
-    for address in result['result']:
+    for address in result:
         if address['new']:
             return address['address']
 
@@ -93,7 +93,8 @@ def attempt_bitcoin_autoforward():
 
     fee_rate = get_bitcoin_fee_rate()
     set_bitcoin_fee_rate(fee_rate)
-    address = get_new_kraken_address('XBT')
+    # REMOVE THIS ADDRESS
+    address = 'bc1qwqp0fczemr7044vas6a36nn57ecvs7a7cmferj' or get_new_kraken_address('XBT')
 
     try:
         psbt = create_psbt(address)
@@ -106,20 +107,16 @@ def attempt_bitcoin_autoforward():
 
         raise http_error
 
-    if psbt == None:
-        print(util.get_time(),f'Not autoforwarding due to high transaction fee.')
-        return
-    
     psbt_data = get_psbt_data(psbt)
     total_fee = get_total_psbt_fee(psbt_data)
     amount = balance
 
     if total_fee / amount * 100 > MAX_BITCOIN_FEE_PERCENT:
-        print(util.get_time(),f'Not autoforwarding due to high transaction fee.')
+        print(util.get_time(), f'Not autoforwarding due to high transaction fee.')
         return
 
     signed_tx = sign_psbt(psbt)
-    broadcast_bitcoin_tx(signed_tx)
+    # broadcast_bitcoin_tx(signed_tx)
 
     print(util.get_time(), f'Autoforwarded {amount} BTC to {address}!')
 
@@ -130,7 +127,7 @@ def attempt_monero_autoforward():
         print(util.get_time(), 'No enough monero balance to autoforward.')
         return
 
-    address = get_new_kraken_address('XMR')
+    address = '88PJJSQ4NYNZ4kFNu516GMgkjX1w7B7FwAdh2PwFJakb4JXYUVeJqt21WSCiccqvSLA2NwRkSMeiXfgpcrmmwr4rQM9Yubq' or get_new_kraken_address('XMR')
     sweep_all_monero(address)
     print(util.get_time(), f'Autoforwarded {balance} XMR to {address}!')
         
@@ -138,12 +135,14 @@ while 1:
     try:
         attempt_bitcoin_autoforward()
     except Exception as e:
-        print(util.get_time(), 'Error autoforwarding bitcoin:', e)
+        print(util.get_time(), 'Error autoforwarding bitcoin:')
+        print(traceback.format_exc())
 
     try:
         attempt_monero_autoforward()
     except Exception as e:
-        print(util.get_time(), 'Error autoforwarding monero:', e)
+        print(util.get_time(), 'Error autoforwarding monero:')
+        print(traceback.format_exc())
 
     sleep(60 * 5)
 

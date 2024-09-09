@@ -13,12 +13,12 @@ import env
 def get_time() -> str:
     return f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]'
 
-def request_electrum_rpc(method: str, params: list | dict = []) -> dict:
+def request_electrum_rpc(method: str, params: list | dict = []):
     headers = {'content-type': 'application/json'}
 
     data = {
         'jsonrpc': '2.0',
-        'id': '0',
+        'id': 'curltext',
         'method': method,
         'params': params,
     }
@@ -27,19 +27,19 @@ def request_electrum_rpc(method: str, params: list | dict = []) -> dict:
         env.ELECTRUM_RPC_URL,
         headers=headers,
         data=json.dumps(data),
-        auth=('user', env.ELECTRUM_RPC_PASSWORD)
+        auth=(env.ELECTRUM_RPC_USERNAME, env.ELECTRUM_RPC_PASSWORD)
     )
 
     response_json = response.json()
 
     if 'error' in response_json:
-        response.status_code = 400
+        raise Exception(response_json)
 
     response.raise_for_status()
 
     return response_json['result']
 
-def request_monero_rpc(method: str, params: dict = {}) -> dict:
+def request_monero_rpc(method: str, params: dict = {}):
     headers = {'content-type': 'application/json'}
 
     data = {
@@ -59,7 +59,7 @@ def request_monero_rpc(method: str, params: dict = {}) -> dict:
     response_json = response.json()
 
     if 'error' in response_json:
-        response.status_code = 400
+        raise Exception(response_json)
 
     response.raise_for_status()
 
@@ -77,10 +77,17 @@ def kraken_request(path: str, payload = {}) -> dict:
     payload['nonce'] = str(int(1000*time.time()))
     headers = {}
     headers['API-Key'] = env.KRAKEN_API_KEY
-    headers['API-Sign'] = get_kraken_signature(path, payload)             
-    
-    return requests.post(
+    headers['API-Sign'] = get_kraken_signature(path, payload)
+
+    response = requests.post(
         'https://api.kraken.com' + path,
         headers=headers,
         data=payload
-    ).json()['result']
+    )
+
+    response_json = response.json()
+
+    if 'error' in response_json:
+        raise Exception(response_json)
+    
+    return response_json

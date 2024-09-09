@@ -1,8 +1,9 @@
-import time
-import random
 from typing import Literal, cast
+import traceback
+import random
+import time
 
-from util import *
+import util
 
 MAX_SLIPPAGE_PERCENT = 1
 
@@ -12,7 +13,7 @@ order_min = {
 }
 
 def get_balance(asset: Literal['XBT', 'XMR']) -> str:
-    balances = kraken_request('/0/private/Balance')
+    balances = util.kraken_request('/0/private/Balance')
     balance = '0'
 
     if f'X{asset}' in balances:
@@ -21,14 +22,14 @@ def get_balance(asset: Literal['XBT', 'XMR']) -> str:
     return balance
 
 def get_bids(asset: Literal['XBT', 'XMR']):
-    return kraken_request('/0/public/Depth', {'pair': f'{asset}USD'})[f'X{asset}ZUSD']['bids']
+    return util.kraken_request('/0/public/Depth', {'pair': f'{asset}USD'})[f'X{asset}ZUSD']['bids']
     
 def attempt_sell(asset: Literal['XBT', 'XMR']):
     balance = float(get_balance(asset))
     to_sell_amount = 0
 
     if balance < order_min[asset]:
-        print(get_time(), f'No enough {asset} balance to sell.')
+        print(util.get_time(), f'No enough {asset} balance to sell.')
         return
 
     bids = get_bids(asset)
@@ -59,17 +60,18 @@ def attempt_sell(asset: Literal['XBT', 'XMR']):
             'volume': to_sell_amount,
         }
 
-        kraken_request('/0/private/AddOrder', payload)
-        print(get_time(), f'Sold {to_sell_amount} {asset}!')
+        util.kraken_request('/0/private/AddOrder', payload)
+        print(util.get_time(), f'Sold {to_sell_amount} {asset}!')
     else:
-        print(get_time(), f'Not selling {asset} due to high slippage.')
+        print(util.get_time(), f'Not selling {asset} due to high slippage.')
 
 while 1:
     for asset in ['XBT', 'XMR']:
         try:
             attempt_sell(cast(Literal['XBT', 'XMR'], asset))
         except Exception as e:
-            print(get_time(), f'Error attempting to sell {asset}:', e)
+            print(util.get_time(), f'Error attempting to sell {asset}:')
+            print(traceback.format_exc())
 
     delay = random.randint(30, 90)
     time.sleep(delay)

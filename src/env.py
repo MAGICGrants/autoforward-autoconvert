@@ -1,6 +1,7 @@
 import os
 
 ELECTRUM_RPC_URL = os.getenv('ELECTRUM_RPC_URL', 'http://electrs:7000')
+ELECTRUM_RPC_USERNAME = os.getenv('ELECTRUM_RPC_USERNAME', '')
 ELECTRUM_RPC_PASSWORD = os.getenv('ELECTRUM_RPC_PASSWORD', '')
 BITCOIN_WALLET_SEED = os.getenv('BITCOIN_WALLET_SEED', '')
 

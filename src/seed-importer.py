@@ -1,4 +1,5 @@
 from bip_utils import Bip39SeedGenerator, Bip84, Bip84Coins
+import traceback
 
 import util
 import env
@@ -27,10 +28,14 @@ def import_monero_seed():
 
 try:
    import_bitcoin_seed()
+   print('Bitcoin seed has successfully been imported!')
 except Exception as e:
-   print(util.get_time(), 'Error importing bitcoin seed:', e)
+   print(util.get_time(), 'Error importing bitcoin seed:')
+   print(traceback.format_exc())
 
 try:
    import_monero_seed()
+   print('Monero seed has successfully been imported!')
 except Exception as e:
-   print(util.get_time(), 'Error importing monero seed:', e)
+   print(util.get_time(), 'Error importing monero seed:')
+   print(traceback.format_exc())
