@@ -1,0 +1,42 @@
+name: Deploy autoforward and autoconvert programs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USER }}@${{ secrets.VPS_IP }} << 'EOF'
+            export HISTFILE=/dev/null
+            cd autoforward-autoconvert
+            git checkout main
+            echo "Pulling changes..."
+            git pull
+            echo "Starting..."
+
+            ELECTRS_DAEMON_RPC_ADDR=${{ secrets.ELECTRS_DAEMON_RPC_ADDR }} \
+            ELECTRS_DAEMON_P2P_ADDR=${{ secrets.ELECTRS_DAEMON_P2P_ADDR }} \
+            ELECTRUM_RPC_URL=${{ secrets.ELECTRUM_RPC_URL }} \
+            ELECTRUM_RPC_PASSWORD=${{ secrets.ELECTRUM_RPC_PASSWORD }} \
+            BITCOIN_WALLET_SEED=${{ secrets.BITCOIN_WALLET_SEED }} \
+            MONERO_RPC_URL=${{ secrets.MONERO_RPC_URL }} \
+            MONERO_RPC_USERNAME=${{ secrets.MONERO_RPC_USERNAME }} \
+            MONERO_RPC_PASSWORD=${{ secrets.MONERO_RPC_PASSWORD }} \
+            MONERO_WALLET_SEED=${{ secrets.MONERO_WALLET_SEED }} \
+            MONERO_WALLET_PASSWORD=${{ secrets.MONERO_WALLET_PASSWORD }} \
+            MONERO_WALLET_HEIGHT=${{ secrets.MONERO_WALLET_HEIGHT }} \
+            KRAKEN_API_KEY=${{ secrets.KRAKEN_API_KEY }} \
+            KRAKEN_API_SECRET=${{ secrets.KRAKEN_API_SECRET }} \
+            docker compose up -d --build
+          EOF

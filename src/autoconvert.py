@@ -1,7 +1,8 @@
 import time
-import os
+import random
+from typing import Literal, cast
 
-from helpers import *
+from util import *
 
 MAX_SLIPPAGE_PERCENT = 1
 
@@ -10,7 +11,7 @@ order_min = {
     'XMR': 0.03
 }
 
-def get_balance(asset: 'XBT' | 'XMR') -> str:
+def get_balance(asset: Literal['XBT', 'XMR']) -> str:
     balances = kraken_request('/0/private/Balance')
     balance = '0'
 
@@ -19,10 +20,10 @@ def get_balance(asset: 'XBT' | 'XMR') -> str:
 
     return balance
 
-def get_bids(asset: 'XBT' | 'XMR'):
-    return kraken_request('/0/public/Depth', {pair: f'{asset}USD'})[f'X{asset}ZUSD']['bids']
+def get_bids(asset: Literal['XBT', 'XMR']):
+    return kraken_request('/0/public/Depth', {'pair': f'{asset}USD'})[f'X{asset}ZUSD']['bids']
     
-def attempt_sell(asset: 'XBT' | 'XMR'):
+def attempt_sell(asset: Literal['XBT', 'XMR']):
     balance = float(get_balance(asset))
     to_sell_amount = 0
 
@@ -30,7 +31,7 @@ def attempt_sell(asset: 'XBT' | 'XMR'):
         print(get_time(), f'No enough {asset} balance to sell.')
         return
 
-    bids = get_bids()
+    bids = get_bids(asset)
     market_price = float(bids[0][0])
 
     for bid in bids:
@@ -66,7 +67,7 @@ def attempt_sell(asset: 'XBT' | 'XMR'):
 while 1:
     for asset in ['XBT', 'XMR']:
         try:
-            attempt_sell(asset)
+            attempt_sell(cast(Literal['XBT', 'XMR'], asset))
         except Exception as e:
             print(get_time(), f'Error attempting to sell {asset}:', e)
 

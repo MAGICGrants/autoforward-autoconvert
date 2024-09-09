@@ -1,0 +1,85 @@
+services:
+  electrum-client:
+    build:
+      context: ./electrum-client
+      args:
+        VERSION: "4.5.5"
+        CHECKSUM_SHA512: "3bdfce2187466fff20fd67736bdf257bf95d3517de47043be411ccda558a442b8fd81d6a8da094a39a1db39a7339dcd4282e73a7f00cf6bbd70473d7ce456b0b"
+    container_name: electrum-client
+    restart: unless-stopped
+    environment:
+      - ELECTRUM_USER=user
+      - ELECTRUM_PASSWORD=${ELECTRUM_RPC_PASSWORD}
+    ports:
+      - 7000:7000
+
+  monero-wallet-rpc:
+    image: sethsimmons/simple-monero-wallet-rpc:latest
+    restart: unless-stopped
+    container_name: monero-wallet-rpc
+    volumes:
+      - monero-wallet-rpc-data:/home/monero
+    command:
+      - "--trusted-daemon"
+      - "--rpc-bind-port=18082"
+      - "--rpc-login=monero:monero"
+      - "--daemon-address=xmr.tcpcat.net:18089"
+      - "--wallet-dir=/home/monero/wallet"
+      - "--log-level=4"
+
+  seed-importer:
+    image: curlimages/curl
+    container_name: seed-importer
+    environment:
+      - ELECTRUM_RPC_URL=${ELECTRUM_RPC_URL}
+      - ELECTRUM_RPC_PASSWORD=${ELECTRUM_RPC_PASSWORD}
+      - BITCOIN_WALLET_SEED=${BITCOIN_WALLET_SEED}
+      - MONERO_RPC_URL=${MONERO_RPC_URL}
+      - MONERO_RPC_USERNAME=${MONERO_RPC_USERNAME}
+      - MONERO_RPC_PASSWORD=${MONERO_RPC_PASSWORD}
+      - MONERO_WALLET_SEED=${MONERO_WALLET_SEED}
+      - MONERO_WALLET_PASSWORD=${MONERO_WALLET_PASSWORD}
+      - MONERO_WALLET_HEIGHT=${MONERO_WALLET_HEIGHT}
+    volumes:
+      - ./src/seed-importer.sh:/script/seed-importer.sh
+    command: /bin/sh /script/seed-importer.sh
+    depends_on:
+      - electrum_client
+      - monero-wallet-rpc
+
+  autoforward:
+    image: python:3.12-alpine
+    container_name: autoforward
+    restart: unless-stopped
+    environment:
+      - ELECTRUM_RPC_URL=${ELECTRUM_RPC_URL}
+      - ELECTRUM_RPC_PASSWORD=${ELECTRUM_RPC_PASSWORD}
+      - BITCOIN_WALLET_SEED=${BITCOIN_WALLET_SEED}
+      - MONERO_RPC_URL=${MONERO_RPC_URL}
+      - MONERO_RPC_USERNAME=${MONERO_RPC_USERNAME}
+      - MONERO_RPC_PASSWORD=${MONERO_RPC_PASSWORD}
+      - MONERO_WALLET_SEED=${MONERO_WALLET_SEED}
+      - MONERO_WALLET_PASSWORD=${MONERO_WALLET_PASSWORD}
+      - MONERO_WALLET_HEIGHT=${MONERO_WALLET_HEIGHT}
+      - KRAKEN_API_KEY=${KRAKEN_API_KEY}
+      - KRAKEN_API_SECRET=${KRAKEN_API_SECRET}
+    volumes:
+      - ./requirements.txt:/app/requirements.txt
+      - ./src:/app/src
+    command: pip install -r /app/requirements.txt && python /app/src/autoforward.py
+
+  autoconvert:
+    image: python:3.12-alpine
+    container_name: autoconvert
+    restart: unless-stopped
+    environment:
+      - KRAKEN_API_KEY=${KRAKEN_API_KEY}
+      - KRAKEN_API_SECRET=${KRAKEN_API_SECRET}
+    volumes:
+      - ./requirements.txt:/app/requirements.txt
+      - ./src:/app/src
+    command: pip install -r /app/requirements.txt && python /app/src/autoconvert.py
+
+volumes:
+  electrs_data:
+  monero-wallet-rpc-data:
