@@ -93,8 +93,7 @@ def attempt_bitcoin_autoforward():
 
     fee_rate = get_bitcoin_fee_rate()
     set_bitcoin_fee_rate(fee_rate)
-    # REMOVE THIS ADDRESS
-    address = 'bc1qwqp0fczemr7044vas6a36nn57ecvs7a7cmferj' or get_new_kraken_address('XBT')
+    address = get_new_kraken_address('XBT')
 
     try:
         psbt = create_psbt(address)
@@ -127,7 +126,7 @@ def attempt_monero_autoforward():
         print(util.get_time(), 'No enough monero balance to autoforward.')
         return
 
-    address = '88PJJSQ4NYNZ4kFNu516GMgkjX1w7B7FwAdh2PwFJakb4JXYUVeJqt21WSCiccqvSLA2NwRkSMeiXfgpcrmmwr4rQM9Yubq' or get_new_kraken_address('XMR')
+    address = get_new_kraken_address('XMR')
     sweep_all_monero(address)
     print(util.get_time(), f'Autoforwarded {balance} XMR to {address}!')
         
