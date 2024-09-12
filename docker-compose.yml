@@ -41,7 +41,7 @@ services:
       - MONERO_WALLET_SEED=${MONERO_WALLET_SEED}
       - MONERO_WALLET_PASSWORD=${MONERO_WALLET_PASSWORD}
       - MONERO_WALLET_HEIGHT=${MONERO_WALLET_HEIGHT}
-    command: python /app/src/seed-importer.py
+    command: python ./src/seed-importer.py
     depends_on:
       - electrum-client
       - monero-wallet-rpc
@@ -65,7 +65,7 @@ services:
       - MONERO_WALLET_HEIGHT=${MONERO_WALLET_HEIGHT}
       - KRAKEN_API_KEY=${KRAKEN_API_KEY}
       - KRAKEN_API_SECRET=${KRAKEN_API_SECRET}
-    command: python /app/src/autoforward.py
+    command: python ./src/autoforward.py
     depends_on:
       - seed-importer
 
@@ -78,7 +78,7 @@ services:
       - PYTHONUNBUFFERED=1
       - KRAKEN_API_KEY=${KRAKEN_API_KEY}
       - KRAKEN_API_SECRET=${KRAKEN_API_SECRET}
-    command: python /app/src/autoconvert.py
+    command: python ./src/autoconvert.py
     depends_on:
       - seed-importer
 
