@@ -12,7 +12,7 @@ services:
       - ELECTRUM_PASSWORD=${ELECTRUM_RPC_PASSWORD}
 
   monero-wallet-rpc:
-    image: sethsimmons/simple-monero-wallet-rpc:latest
+    image: ghcr.io/sethforprivacy/simple-monero-wallet-rpc:latest
     restart: unless-stopped
     container_name: monero-wallet-rpc
     volumes:
