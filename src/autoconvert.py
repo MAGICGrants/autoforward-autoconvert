@@ -3,9 +3,8 @@ import traceback
 import random
 import time
 
+from constants import MAX_SLIPPAGE_PERCENT
 import util
-
-MAX_SLIPPAGE_PERCENT = 1
 
 order_min = {
     'XBT': 0.0001,
