@@ -4,7 +4,7 @@ import traceback
 import requests
 import json
 
-from constants import MAX_BITCOIN_FEE_PERCENT, MIN_BITCOIN_SEND_AMOUNT, MIN_MONERO_SEND_AMOUNT
+from constants import MIN_BITCOIN_SEND_AMOUNT, MIN_MONERO_SEND_AMOUNT
 import util
 import env
 
@@ -110,7 +110,7 @@ def attempt_bitcoin_autoforward():
     total_fee = get_total_psbt_fee(psbt_data)
     amount = balance
 
-    if total_fee / amount * 100 > MAX_BITCOIN_FEE_PERCENT:
+    if total_fee / amount * 100 > env.MAX_BITCOIN_FEE_PERCENT:
         print(util.get_time(), f'Not autoforwarding due to high transaction fee.')
         return
 

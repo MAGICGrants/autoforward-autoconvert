@@ -3,8 +3,8 @@ import traceback
 import random
 import time
 
-from constants import MAX_SLIPPAGE_PERCENT
 import util
+import env
 
 order_min = {
     'XBT': 0.0001,
@@ -40,7 +40,7 @@ def attempt_sell(asset: Literal['XBT', 'XMR']):
         slippage_percent = ((market_price - bid_price) / market_price) * 100 # Example ((161.06-161.05)/161.06)*100 = 0.0062088662610207
 
         # Break loop if slippage is too high
-        if slippage_percent > MAX_SLIPPAGE_PERCENT:
+        if slippage_percent > env.MAX_SLIPPAGE_PERCENT:
             break
 
         # Otherwise, add the bid_volume to the to_sell_amount
