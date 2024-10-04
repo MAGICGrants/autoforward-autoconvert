@@ -11,9 +11,6 @@ import env
 def get_bitcoin_fee_rate() -> int:
     return requests.get('https://mempool.space/api/v1/fees/recommended').json()['halfHourFee']
 
-def open_bitcoin_wallet():
-    util.request_electrum_rpc('load_wallet')
-
 def set_bitcoin_fee_rate(rate: int):
     util.request_electrum_rpc('setconfig', ['dynamic_fees', False])
     util.request_electrum_rpc('setconfig', ['fee_per_kb', rate * 1000])
@@ -53,10 +50,6 @@ def sign_psbt(psbt: str) -> str:
 def broadcast_bitcoin_tx(signed_tx: str):
     util.request_electrum_rpc('broadcast', [signed_tx])
 
-def open_monero_wallet() -> None:
-    params = {'filename': 'wallet', 'password': env.MONERO_WALLET_PASSWORD}
-    util.request_monero_rpc('open_wallet', params)
-
 def get_monero_balance() -> float:
     params = {'account_index': 0}
     return util.request_monero_rpc('get_balance', params)['balance'] / 1000000000000
@@ -84,11 +77,10 @@ def get_new_kraken_address(asset: Literal['XBT', 'XMR']) -> str:
     raise Exception(f'Kraken did not return a new address: {json.dumps(result, indent=2)}')
 
 def attempt_bitcoin_autoforward():
-    open_bitcoin_wallet()
     balance = get_bitcoin_balance()
 
     if balance < MIN_BITCOIN_SEND_AMOUNT:
-        print(util.get_time(), 'No enough bitcoin balance to autoforward.')
+        print(util.get_time(), 'Not enough bitcoin balance to autoforward.')
         return
 
     fee_rate = get_bitcoin_fee_rate()
@@ -115,7 +107,7 @@ def attempt_bitcoin_autoforward():
         return
 
     signed_tx = sign_psbt(psbt)
-    # broadcast_bitcoin_tx(signed_tx)
+    broadcast_bitcoin_tx(signed_tx)
 
     print(util.get_time(), f'Autoforwarded {amount} BTC to {address}!')
 
@@ -123,14 +115,17 @@ def attempt_monero_autoforward():
     balance = get_monero_balance()
 
     if balance < MIN_MONERO_SEND_AMOUNT:
-        print(util.get_time(), 'No enough monero balance to autoforward.')
+        print(util.get_time(), 'Not enough monero balance to autoforward.')
         return
 
     address = get_new_kraken_address('XMR')
     sweep_all_monero(address)
     print(util.get_time(), f'Autoforwarded {balance} XMR to {address}!')
-        
-while 1:
+
+util.wait_for_rpc()
+util.wait_for_wallets()
+
+while 1: 
     try:
         attempt_bitcoin_autoforward()
     except Exception as e:

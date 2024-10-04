@@ -15,7 +15,7 @@ def import_bitcoin_seed():
    util.request_electrum_rpc('restore', [zprv])
 
 def import_monero_seed():
-   monero_params = {
+   params = {
       'filename': 'wallet',
       'seed': env.MONERO_WALLET_SEED,
       'password': env.MONERO_RPC_PASSWORD,
@@ -24,10 +24,14 @@ def import_monero_seed():
       'autosave_current': True
    }
 
-   util.request_monero_rpc('restore_deterministic_wallet', monero_params)
+   util.request_monero_rpc('restore_deterministic_wallet', params)
+
+util.wait_for_rpc()
 
 try:
    import_bitcoin_seed()
+   util.request_electrum_rpc('load_wallet')
+   util.request_electrum_rpc('changegaplimit', [1000, 'iknowhatimdoing'])
    print('Bitcoin seed has successfully been imported!')
 except Exception as e:
    print(util.get_time(), 'Error importing bitcoin seed:')

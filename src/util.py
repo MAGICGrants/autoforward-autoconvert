@@ -65,6 +65,51 @@ def request_monero_rpc(method: str, params: dict = {}):
 
     return response_json['result']
 
+def open_bitcoin_wallet():
+    request_electrum_rpc('load_wallet')
+
+def open_monero_wallet() -> None:
+    params = {'filename': 'wallet', 'password': env.MONERO_WALLET_PASSWORD}
+    request_monero_rpc('open_wallet', params)
+
+def wait_for_rpc():
+    print('Waiting for Electrum RPC...')
+
+    while 1:
+        try:
+            request_electrum_rpc('getinfo')
+            break
+        except:
+            time.sleep(10)
+    
+    print('Waiting for Monero RPC...')
+
+    while 1:
+        try:
+            request_electrum_rpc('getinfo')
+            break
+        except:
+            time.sleep(10)
+
+def wait_for_wallets():
+    print('Waiting for Electrum wallet...')
+
+    while 1:
+        try:
+            open_bitcoin_wallet()
+            break
+        except:
+            time.sleep(10)
+    
+    print('Waiting for Monero wallet...')
+
+    while 1:
+        try:
+            open_monero_wallet()
+            break
+        except:
+            time.sleep(10)
+
 def get_kraken_signature(url: str, payload: dict):
     postdata = urllib.parse.urlencode(payload)
     encoded = (str(payload['nonce']) + postdata).encode()
