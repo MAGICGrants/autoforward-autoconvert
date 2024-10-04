@@ -13,7 +13,7 @@ services:
       - ELECTRUM_SERVER_ADDRESS=${ELECTRUM_SERVER_ADDRESS}
 
   monero-wallet-rpc:
-    image: sethsimmons/simple-monero-wallet-rpc:latest
+    image: ghcr.io/sethforprivacy/simple-monero-wallet-rpc:latest
     restart: unless-stopped
     container_name: monero-wallet-rpc
     volumes:
