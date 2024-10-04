@@ -32,7 +32,7 @@ services:
     container_name: seed-importer
     environment:
       - PYTHONUNBUFFERED=1
-      - ELECTRUM_RPC_URL=electrum-client:7000
+      - ELECTRUM_RPC_URL=http://electrum-client:7000
       - ELECTRUM_RPC_USERNAME=${ELECTRUM_RPC_USERNAME}
       - ELECTRUM_RPC_PASSWORD=${ELECTRUM_RPC_PASSWORD}
       - BITCOIN_WALLET_SEED=${BITCOIN_WALLET_SEED}
@@ -54,7 +54,7 @@ services:
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
-      - ELECTRUM_RPC_URL=electrum-client:7000
+      - ELECTRUM_RPC_URL=http://electrum-client:7000
       - ELECTRUM_RPC_USERNAME=${ELECTRUM_RPC_USERNAME}
       - ELECTRUM_RPC_PASSWORD=${ELECTRUM_RPC_PASSWORD}
       - BITCOIN_WALLET_SEED=${BITCOIN_WALLET_SEED}
