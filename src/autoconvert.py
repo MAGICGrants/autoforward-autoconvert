@@ -28,7 +28,7 @@ def attempt_sell(asset: Literal['XBT', 'XMR']):
     to_sell_amount = 0
 
     if balance < order_min[asset]:
-        print(util.get_time(), f'No enough {asset} balance to sell.')
+        print(util.get_time(), f'Not enough {asset} balance to sell.')
         return
 
     bids = get_bids(asset)
