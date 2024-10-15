@@ -65,7 +65,8 @@ def sweep_all_monero(address: str) -> None:
 def get_new_kraken_address(asset: Literal['XBT', 'XMR']) -> str:
     payload = {
         'asset': asset,
-        'method': 'Bitcoin' if asset == 'XBT' else 'Monero'
+        'method': 'Bitcoin' if asset == 'XBT' else 'Monero',
+        'new': True
     }
 
     result = util.kraken_request('/0/private/DepositAddresses', payload)
