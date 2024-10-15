@@ -70,7 +70,7 @@ def open_bitcoin_wallet():
 
 def open_monero_wallet() -> None:
     params = {'filename': 'wallet', 'password': env.MONERO_WALLET_PASSWORD}
-    request_monero_rpc('open_wallet', params)
+    print(request_monero_rpc('open_wallet', params))
 
 def wait_for_rpc():
     print('Waiting for Electrum RPC...')
