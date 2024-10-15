@@ -132,7 +132,7 @@ def kraken_request(path: str, payload = {}) -> dict:
 
     response_json = response.json()
 
-    if response_json["error"]:
+    if response_json['error']:
         raise Exception(response_json)
     
-    return response_json
+    return response_json['result']
