@@ -107,7 +107,8 @@ def wait_for_wallets():
         try:
             open_monero_wallet()
             break
-        except:
+        except Exception as e:
+            print(e)
             time.sleep(10)
 
 def get_kraken_signature(url: str, payload: dict):
