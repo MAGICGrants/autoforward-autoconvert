@@ -25,10 +25,10 @@ jobs:
             git pull
             echo "Starting..."
 
-            ELECTRUM_RPC_USERNAME="user"
+            ELECTRUM_RPC_USERNAME="user" \
             ELECTRUM_RPC_PASSWORD="${{ secrets.ELECTRUM_RPC_PASSWORD }}" \
             BITCOIN_WALLET_SEED="${{ secrets.BITCOIN_WALLET_SEED }}" \
-            MONERO_DAEMON_ADDRESS="${{ vars.MONERO_DAEMON_ADDRESS }}"
+            MONERO_DAEMON_ADDRESS="${{ secrets.MONERO_DAEMON_ADDRESS }}"
             MONERO_RPC_USERNAME="user"
             MONERO_RPC_PASSWORD="${{ secrets.MONERO_RPC_PASSWORD }}" \
             MONERO_WALLET_SEED="${{ secrets.MONERO_WALLET_SEED }}" \
