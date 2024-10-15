@@ -81,8 +81,7 @@ def get_new_kraken_address(asset: Literal['XBT', 'XMR']) -> str:
         }
         result = util.kraken_request('/0/private/DepositAddresses', payload)
         first_new_address = next((addr for addr in result if addr.get('new', False)), None)
-        if first_new_address:
-            return(first_new_address['address'])
+        return(first_new_address['address'])
 
     raise Exception(f'Kraken did not return a new address: {json.dumps(result, indent=2)}')
 
