@@ -89,7 +89,7 @@ def attempt_bitcoin_autoforward():
     balance = get_bitcoin_balance()
 
     if balance < MIN_BITCOIN_SEND_AMOUNT:
-        print(util.get_time(), 'Not enough bitcoin balance to autoforward.')
+        print(util.get_time(), f'Not enough Bitcoin balance to autoforward. (Balance: {balance}, Min Send: {MIN_BITCOIN_SEND_AMOUNT})')
         return
 
     fee_rate = get_bitcoin_fee_rate()
@@ -124,7 +124,7 @@ def attempt_monero_autoforward():
     balance = get_monero_balance()
 
     if balance < MIN_MONERO_SEND_AMOUNT:
-        print(util.get_time(), 'Not enough monero balance to autoforward.')
+        print(util.get_time(), f'Not enough Monero balance to autoforward. (Balance: {balance}, Min Send: {MIN_MONERO_SEND_AMOUNT})')
         return
 
     address = get_new_kraken_address('XMR')
