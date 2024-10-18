@@ -104,15 +104,12 @@ def wait_for_wallets():
     
     print('Waiting for Monero wallet...')
 
-    while 1:
+    while 1:                  
         try:
-            request_monero_rpc('get_balance', {'account_index': 0})
-            break
-        except Exception as e:
-            error = ast.literal_eval(str(e))
-            if not (isinstance(error, dict) and error.get('error', {}).get('message')):
-                raise e
-                    
+            request_monero_rpc('close_wallet')
+        except:
+            pass
+        
         try:
             open_monero_wallet()
             break
