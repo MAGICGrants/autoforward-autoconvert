@@ -18,7 +18,7 @@ def import_monero_seed():
    params = {
       'filename': 'foo',
       'seed': env.MONERO_WALLET_SEED,
-      'password': env.MONERO_RPC_PASSWORD,
+      'password': env.MONERO_WALLET_PASSWORD,
       'restore_height': env.MONERO_WALLET_HEIGHT,
       'language': 'english',
       'autosave_current': True
