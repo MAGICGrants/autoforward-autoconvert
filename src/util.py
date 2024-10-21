@@ -70,7 +70,7 @@ def open_bitcoin_wallet():
     request_electrum_rpc('load_wallet')
 
 def open_monero_wallet() -> None:
-    params = {'filename': 'wallet', 'password': env.MONERO_WALLET_PASSWORD}
+    params = {'filename': 'foo', 'password': env.MONERO_WALLET_PASSWORD}
     request_monero_rpc('open_wallet', params)
 
 def wait_for_rpc():
@@ -101,20 +101,24 @@ def wait_for_wallets():
             break
         except:
             time.sleep(10)
-    
+
     print('Waiting for Monero wallet...')
 
     while 1:                  
         try:
-            request_monero_rpc('close_wallet')
-        except:
-            pass
+            request_monero_rpc('get_balance', {'account_index': 0})
+            break
+        except Exception as e:
+            print('Failed to check Monero balance:', e)
+            print('Attempting to open Monero wallet...')
         
         try:
             open_monero_wallet()
             break
-        except:
-            time.sleep(10)
+        except Exception as e:
+            print('Failed to open Monero wallet:', e)
+
+        time.sleep(10)
 
 def get_kraken_signature(url: str, payload: dict):
     postdata = urllib.parse.urlencode(payload)

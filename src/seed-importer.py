@@ -16,7 +16,7 @@ def import_bitcoin_seed():
 
 def import_monero_seed():
    params = {
-      'filename': 'wallet',
+      'filename': 'foo',
       'seed': env.MONERO_WALLET_SEED,
       'password': env.MONERO_RPC_PASSWORD,
       'restore_height': env.MONERO_WALLET_HEIGHT,
