@@ -21,7 +21,7 @@ def get_balance(asset: Literal['XBT', 'XMR']) -> str:
     return balance
 
 def get_bids(asset: Literal['XBT', 'XMR']):
-    return util.kraken_request('/0/public/Depth', {'pair': f'{asset}USD'})[f'{asset}USDT']['bids']
+    return util.kraken_request('/0/public/Depth', {'pair': f'{asset}USDT'})[f'{asset}USDT']['bids']
     
 def attempt_sell(asset: Literal['XBT', 'XMR']):
     balance = float(get_balance(asset))
