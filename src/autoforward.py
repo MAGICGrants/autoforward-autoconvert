@@ -4,7 +4,7 @@ import traceback
 import requests
 import json
 
-from constants import MIN_BITCOIN_SEND_AMOUNT, MIN_MONERO_SEND_AMOUNT
+from constants import MIN_BITCOIN_SEND_AMOUNT, MIN_LITECOIN_SEND_AMOUNT, MIN_MONERO_SEND_AMOUNT
 import util
 import env
 
@@ -129,8 +129,8 @@ def attempt_bitcoin_autoforward():
 def attempt_litecoin_autoforward():
     balance = get_bitcoin_balance(env.LTC_ELECTRUM_RPC_URL)
 
-    if balance < MIN_BITCOIN_SEND_AMOUNT:
-        print(util.get_time(), f'Not enough Litecoin balance to autoforward. (Balance: {balance}, Min Send: {MIN_BITCOIN_SEND_AMOUNT})')
+    if balance < MIN_LITECOIN_SEND_AMOUNT:
+        print(util.get_time(), f'Not enough Litecoin balance to autoforward. (Balance: {balance}, Min Send: {MIN_LITECOIN_SEND_AMOUNT})')
         return
 
     try:
