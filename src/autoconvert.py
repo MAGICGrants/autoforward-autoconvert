@@ -6,12 +6,14 @@ import time
 import util
 import env
 
+# https://support.kraken.com/hc/en-us/articles/205893708-Minimum-order-size-volume-for-trading
 order_min = {
     'XBT': 0.0001,
+    'LTC': 0.05,
     'XMR': 0.03
 }
 
-def get_balance(asset: Literal['XBT', 'XMR']) -> str:
+def get_balance(asset: Literal['XBT', 'LTC', 'XMR']) -> str:
     balances = util.kraken_request('/0/private/Balance')
     balance = '0'
 
@@ -20,10 +22,10 @@ def get_balance(asset: Literal['XBT', 'XMR']) -> str:
 
     return balance
 
-def get_bids(asset: Literal['XBT', 'XMR']):
+def get_bids(asset: Literal['XBT', 'LTC', 'XMR']):
     return util.kraken_request('/0/public/Depth', {'pair': f'{asset}USD'})[f'X{asset}ZUSD']['bids']
     
-def attempt_sell(asset: Literal['XBT', 'XMR']):
+def attempt_sell(asset: Literal['XBT', 'LTC', 'XMR']):
     balance = float(get_balance(asset))
     to_sell_amount = 0
 
@@ -65,9 +67,9 @@ def attempt_sell(asset: Literal['XBT', 'XMR']):
         print(util.get_time(), f'Not selling {asset} due to high slippage.')
 
 while 1:
-    for asset in ['XBT', 'XMR']:
+    for asset in ['XBT', 'LTC', 'XMR']:
         try:
-            attempt_sell(cast(Literal['XBT', 'XMR'], asset))
+            attempt_sell(cast(Literal['XBT', 'LTC', 'XMR'], asset))
         except Exception as e:
             print(util.get_time(), f'Error attempting to sell {asset}:')
             print(traceback.format_exc())

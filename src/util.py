@@ -14,7 +14,7 @@ import env
 def get_time() -> str:
     return f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]'
 
-def request_electrum_rpc(method: str, params: list | dict = []):
+def request_electrum_rpc(rpc_url: str, method: str, params: list | dict = []):
     headers = {'content-type': 'application/json'}
 
     data = {
@@ -25,7 +25,7 @@ def request_electrum_rpc(method: str, params: list | dict = []):
     }
 
     response =  requests.post(
-        env.ELECTRUM_RPC_URL,
+        rpc_url,
         headers=headers,
         data=json.dumps(data),
         auth=(env.ELECTRUM_RPC_USERNAME, env.ELECTRUM_RPC_PASSWORD)
@@ -67,18 +67,30 @@ def request_monero_rpc(method: str, params: dict = {}):
     return response_json['result']
 
 def open_bitcoin_wallet():
-    request_electrum_rpc('load_wallet')
+    request_electrum_rpc(env.BTC_ELECTRUM_RPC_URL, 'load_wallet')
+
+def open_litecoin_wallet():
+    request_electrum_rpc(env.LTC_ELECTRUM_RPC_URL, 'load_wallet')
 
 def open_monero_wallet() -> None:
     params = {'filename': 'foo', 'password': env.MONERO_WALLET_PASSWORD}
     request_monero_rpc('open_wallet', params)
 
 def wait_for_rpc():
-    print('Waiting for Electrum RPC...')
+    print('Waiting for BTC Electrum RPC...')
 
     while 1:
         try:
-            request_electrum_rpc('getinfo')
+            request_electrum_rpc(env.BTC_ELECTRUM_RPC_URL, 'getinfo')
+            break
+        except:
+            time.sleep(10)
+    
+    print('Waiting for LTC Electrum RPC...')
+
+    while 1:
+        try:
+            request_electrum_rpc(env.LTC_ELECTRUM_RPC_URL, 'getinfo')
             break
         except:
             time.sleep(10)
@@ -87,17 +99,26 @@ def wait_for_rpc():
 
     while 1:
         try:
-            request_electrum_rpc('getinfo')
+            request_monero_rpc('getinfo')
             break
         except:
             time.sleep(10)
 
 def wait_for_wallets():
-    print('Waiting for Electrum wallet...')
+    print('Waiting for Bitcoin wallet...')
 
     while 1:
         try:
             open_bitcoin_wallet()
+            break
+        except:
+            time.sleep(10)
+        
+    print('Waiting for Litecoin wallet...')
+
+    while 1:
+        try:
+            open_litecoin_wallet()
             break
         except:
             time.sleep(10)

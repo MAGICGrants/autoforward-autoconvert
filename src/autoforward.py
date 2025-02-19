@@ -8,27 +8,30 @@ from constants import MIN_BITCOIN_SEND_AMOUNT, MIN_MONERO_SEND_AMOUNT
 import util
 import env
 
-def get_bitcoin_fee_rate() -> int:
-    return requests.get('https://mempool.space/api/v1/fees/recommended').json()['halfHourFee']
+def get_bitcoin_fee_rate(source: str, rate: str) -> int:
+    return requests.get(source).json()[rate]
 
-def set_bitcoin_fee_rate(rate: int):
-    util.request_electrum_rpc('setconfig', ['dynamic_fees', False])
-    util.request_electrum_rpc('setconfig', ['fee_per_kb', rate * 1000])
+def set_bitcoin_fee_rate(coin: str, rate: int, dynamic: bool):
+    if dynamic:  # Fall back to the Electrum rate if there is an issue
+        util.request_electrum_rpc(coin, 'setconfig', ['dynamic_fees', True])
+    else:
+        util.request_electrum_rpc(coin, 'setconfig', ['dynamic_fees', False])
+        util.request_electrum_rpc(coin, 'setconfig', ['fee_per_kb', rate * 1000])
 
-def get_bitcoin_balance() -> float:
-    return float(util.request_electrum_rpc('getbalance')['confirmed'])
+def get_bitcoin_balance(coin: str) -> float:
+    return float(util.request_electrum_rpc(coin, 'getbalance')['confirmed'])
 
-def create_psbt(destination_address: str) -> str:
+def create_psbt(coin: str, destination_address: str) -> str:
     params = {
         'destination': destination_address,
         'amount': '!',
         'unsigned': True # This way we can get the input amounts
     }
 
-    return util.request_electrum_rpc('payto', params)
+    return util.request_electrum_rpc(coin, 'payto', params)
 
-def get_psbt_data(psbt: str) -> dict:
-    return util.request_electrum_rpc('deserialize', [psbt])
+def get_psbt_data(coin: str, psbt: str) -> dict:
+    return util.request_electrum_rpc(coin, 'deserialize', [psbt])
 
 def get_total_psbt_fee(psbt_data: dict) -> float:
     inputs_sum_sats = 0
@@ -41,14 +44,14 @@ def get_total_psbt_fee(psbt_data: dict) -> float:
         outputs_sum_sats += cast(int, _output['value_sats'])
 
     total_fee_sats = inputs_sum_sats - outputs_sum_sats
-    total_fee_btc = total_fee_sats / 100000000
-    return total_fee_btc
+    total_fee = total_fee_sats / 100000000
+    return total_fee
 
-def sign_psbt(psbt: str) -> str:
-    return cast(str, util.request_electrum_rpc('signtransaction', [psbt]))
+def sign_psbt(coin: str, psbt: str) -> str:
+    return cast(str, util.request_electrum_rpc(coin, 'signtransaction', [psbt]))
 
-def broadcast_bitcoin_tx(signed_tx: str):
-    util.request_electrum_rpc('broadcast', [signed_tx])
+def broadcast_bitcoin_tx(coin: str, signed_tx: str):
+    util.request_electrum_rpc(coin, 'broadcast', [signed_tx])
 
 def get_monero_balance() -> float:
     params = {'account_index': 0}
@@ -86,18 +89,21 @@ def get_new_kraken_address(asset: Literal['XBT', 'XMR']) -> str:
     raise Exception(f'Kraken did not return a new address: {json.dumps(result, indent=2)}')
 
 def attempt_bitcoin_autoforward():
-    balance = get_bitcoin_balance()
+    balance = get_bitcoin_balance(env.BTC_ELECTRUM_RPC_URL)
 
     if balance < MIN_BITCOIN_SEND_AMOUNT:
         print(util.get_time(), f'Not enough Bitcoin balance to autoforward. (Balance: {balance}, Min Send: {MIN_BITCOIN_SEND_AMOUNT})')
         return
 
-    fee_rate = get_bitcoin_fee_rate()
-    set_bitcoin_fee_rate(fee_rate)
+    try:
+        fee_rate = get_bitcoin_fee_rate(env.BITCOIN_FEE_SOURCE, env.BITCOIN_FEE_RATE)
+        set_bitcoin_fee_rate(env.BTC_ELECTRUM_RPC_URL, fee_rate, dynamic=False)
+    except:
+        set_bitcoin_fee_rate(env.BTC_ELECTRUM_RPC_URL, fee_rate=0, dynamic=True)
     address = get_new_kraken_address('XBT')
 
     try:
-        psbt = create_psbt(address)
+        psbt = create_psbt(env.BTC_ELECTRUM_RPC_URL, address)
     except requests.exceptions.HTTPError as http_error:
         response_json = cast(dict, http_error.response.json())
 
@@ -107,12 +113,50 @@ def attempt_bitcoin_autoforward():
 
         raise http_error
 
-    psbt_data = get_psbt_data(psbt)
+    psbt_data = get_psbt_data(env.BTC_ELECTRUM_RPC_URL, psbt)
     total_fee = get_total_psbt_fee(psbt_data)
     amount = balance
 
-    if total_fee / amount * 100 > env.MAX_BITCOIN_FEE_PERCENT:
-        print(util.get_time(), f'Not autoforwarding due to high transaction fee.')
+    if total_fee / amount * 100 > env.MAX_NETWORK_FEE_PERCENT:
+        print(util.get_time(), f'Not autoforwarding due to high transaction fee {total_fee} BTC.')
+        return
+
+    signed_tx = sign_psbt(psbt)
+    broadcast_bitcoin_tx(signed_tx)
+
+    print(util.get_time(), f'Autoforwarded {amount} BTC to {address}!')
+
+def attempt_litecoin_autoforward():
+    balance = get_bitcoin_balance(env.LTC_ELECTRUM_RPC_URL)
+
+    if balance < MIN_BITCOIN_SEND_AMOUNT:
+        print(util.get_time(), f'Not enough Litecoin balance to autoforward. (Balance: {balance}, Min Send: {MIN_BITCOIN_SEND_AMOUNT})')
+        return
+
+    try:
+        fee_rate = get_bitcoin_fee_rate(env.LITECOIN_FEE_SOURCE, env.LITECOIN_FEE_RATE)
+        set_bitcoin_fee_rate(env.LTC_ELECTRUM_RPC_URL, fee_rate, dynamic=False)
+    except:
+        set_bitcoin_fee_rate(env.LTC_ELECTRUM_RPC_URL, fee_rate=0, dynamic=True)
+    address = get_new_kraken_address('LTC')
+
+    try:
+        psbt = create_psbt(env.LTC_ELECTRUM_RPC_URL, address)
+    except requests.exceptions.HTTPError as http_error:
+        response_json = cast(dict, http_error.response.json())
+
+        if response_json.get('error', {}).get('data', {}).get('exception', '') == 'NotEnoughFunds()':
+            print(util.get_time(), f'Not autoforwarding due to high transaction fee.')
+            return                 
+
+        raise http_error
+
+    psbt_data = get_psbt_data(env.LTC_ELECTRUM_RPC_URL, psbt)
+    total_fee = get_total_psbt_fee(psbt_data)
+    amount = balance
+
+    if total_fee / amount * 100 > env.MAX_NETWORK_FEE_PERCENT:
+        print(util.get_time(), f'Not autoforwarding due to high transaction fee {total_fee} LTC.')
         return
 
     signed_tx = sign_psbt(psbt)
@@ -139,6 +183,12 @@ while 1:
         attempt_bitcoin_autoforward()
     except Exception as e:
         print(util.get_time(), 'Error autoforwarding bitcoin:')
+        print(traceback.format_exc())
+
+    try:
+        attempt_litecoin_autoforward()
+    except Exception as e:
+        print(util.get_time(), 'Error autoforwarding litecoin:')
         print(traceback.format_exc())
 
     try:
