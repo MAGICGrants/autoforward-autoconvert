@@ -18,7 +18,7 @@ RUN mkdir -p /data ${LTC_ELECTRUM_HOME} && \
 ENV LTC_ELECTRUM_CHECKSUM_SHA512 $CHECKSUM_SHA512
 
 RUN apk --no-cache add --virtual build-dependencies gcc musl-dev libsecp256k1 libsecp256k1-dev libressl-dev
-RUN wget https://download.electrum.org/${LTC_ELECTRUM_VERSION}/Electrum-${LTC_ELECTRUM_VERSION}.tar.gz
+RUN wget https://github.com/ltcmweb/electrum-ltc/archive/refs/tags/${LTC_ELECTRUM_VERSION}.tar.gz
 RUN [ "${LTC_ELECTRUM_CHECKSUM_SHA512}  Electrum-${LTC_ELECTRUM_VERSION}.tar.gz" = "$(sha512sum Electrum-${LTC_ELECTRUM_VERSION}.tar.gz)" ]
 RUN echo -e "**************************\n SHA 512 Checksum OK\n**************************"
 RUN pip3 install cryptography Electrum-${LTC_ELECTRUM_VERSION}.tar.gz
