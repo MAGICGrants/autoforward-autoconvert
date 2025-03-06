@@ -1,5 +1,5 @@
 import ast
-from typing import Literal
+from typing import Literal, cast
 from requests.auth import HTTPDigestAuth
 from datetime import datetime
 import urllib.parse
@@ -83,7 +83,7 @@ def open_monero_wallet() -> None:
     request_monero_rpc('open_wallet', params)
 
 def wait_for_rpc():
-    print('Waiting for BTC Electrum RPC...')
+    print('Waiting for Bitcoin Electrum RPC...')
 
     while 1:
         try:
@@ -92,7 +92,7 @@ def wait_for_rpc():
         except:
             time.sleep(10)
     
-    print('Waiting for LTC Electrum RPC...')
+    print('Waiting for Litecoin Electrum RPC...')
 
     while 1:
         try:
@@ -105,9 +105,11 @@ def wait_for_rpc():
 
     while 1:
         try:
-            request_monero_rpc('getinfo')
+            request_monero_rpc('get_height')
             break
-        except:
+        except Exception as e:
+            if 'No wallet file' in e.__str__():
+                break
             time.sleep(10)
 
 def wait_for_wallets():

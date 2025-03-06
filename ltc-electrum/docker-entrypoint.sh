@@ -1,17 +1,17 @@
 #!/usr/bin/env sh
 set -ex
 
-trap 'pkill -TERM -P1; electrum stop; exit 0' SIGTERM
+trap 'pkill -TERM -P1; electrum-ltc stop; exit 0' SIGTERM
 
 rm -f .electrum/daemon
-electrum --offline setconfig rpcuser ${LITECOIN_ELECTRUM_USER}
-electrum --offline setconfig rpcpassword ${LITECOIN_ELECTRUM_PASSWORD}
-electrum --offline setconfig rpchost 0.0.0.0
-electrum --offline setconfig rpcport 7001
+electrum-ltc --offline setconfig rpcuser ${ELECTRUM_RPC_USER}
+electrum-ltc --offline setconfig rpcpassword ${ELECTRUM_RPC_PASSWORD}
+electrum-ltc --offline setconfig rpchost 0.0.0.0
+electrum-ltc --offline setconfig rpcport 7000
 
 if [ -n "${LITECOIN_ELECTRUM_SERVER_ADDRESS}" ]; then
-    electrum daemon -1 -s "${LITECOIN_ELECTRUM_SERVER_ADDRESS}" "$@"
+    electrum-ltc daemon -1 -s "${LITECOIN_ELECTRUM_SERVER_ADDRESS}" "$@"
 else
-    electrum daemon "$@"
+    electrum-ltc daemon "$@"
 fi
 
