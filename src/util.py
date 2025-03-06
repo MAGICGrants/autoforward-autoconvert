@@ -1,4 +1,5 @@
 import ast
+from typing import Literal
 from requests.auth import HTTPDigestAuth
 from datetime import datetime
 import urllib.parse
@@ -14,8 +15,13 @@ import env
 def get_time() -> str:
     return f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]'
 
-def request_electrum_rpc(rpc_url: str, method: str, params: list | dict = []):
+def request_electrum_rpc(coin: Literal['btc', 'ltc'], method: str, params: list | dict = []):
     headers = {'content-type': 'application/json'}
+
+    if coin == 'btc':
+        auth = (env.BITCOIN_ELECTRUM_RPC_USERNAME, env.BITCOIN_ELECTRUM_RPC_PASSWORD)
+    else:
+        auth = (env.LITECOIN_ELECTRUM_RPC_USERNAME, env.LITECOIN_ELECTRUM_RPC_PASSWORD)
 
     data = {
         'jsonrpc': '2.0',
@@ -25,10 +31,10 @@ def request_electrum_rpc(rpc_url: str, method: str, params: list | dict = []):
     }
 
     response =  requests.post(
-        rpc_url,
+        env.BITCOIN_ELECTRUM_RPC_URL if coin == 'btc' else env.LITECOIN_ELECTRUM_RPC_URL, 
         headers=headers,
         data=json.dumps(data),
-        auth=(env.ELECTRUM_RPC_USERNAME, env.ELECTRUM_RPC_PASSWORD)
+        auth=auth
     )
 
     response_json = response.json()
@@ -67,10 +73,10 @@ def request_monero_rpc(method: str, params: dict = {}):
     return response_json['result']
 
 def open_bitcoin_wallet():
-    request_electrum_rpc(env.BTC_ELECTRUM_RPC_URL, 'load_wallet')
+    request_electrum_rpc('btc', 'load_wallet')
 
 def open_litecoin_wallet():
-    request_electrum_rpc(env.LTC_ELECTRUM_RPC_URL, 'load_wallet')
+    request_electrum_rpc('ltc', 'load_wallet')
 
 def open_monero_wallet() -> None:
     params = {'filename': 'foo', 'password': env.MONERO_WALLET_PASSWORD}
@@ -81,7 +87,7 @@ def wait_for_rpc():
 
     while 1:
         try:
-            request_electrum_rpc(env.BTC_ELECTRUM_RPC_URL, 'getinfo')
+            request_electrum_rpc('btc', 'getinfo')
             break
         except:
             time.sleep(10)
@@ -90,7 +96,7 @@ def wait_for_rpc():
 
     while 1:
         try:
-            request_electrum_rpc(env.LTC_ELECTRUM_RPC_URL, 'getinfo')
+            request_electrum_rpc('ltc', 'getinfo')
             break
         except:
             time.sleep(10)
