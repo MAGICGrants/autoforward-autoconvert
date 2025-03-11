@@ -31,20 +31,16 @@ jobs:
             BITCOIN_WALLET_SEED=${{ secrets.BITCOIN_WALLET_SEED }} \
             LITECOIN_WALLET_SEED=${{ secrets.LITECOIN_WALLET_SEED }} \
             LITECOIN_MWEB_WALLET_SEED=${{ secrets.LITECOIN_MWEB_WALLET_SEED }} \
-
             MONERO_DAEMON_ADDRESS=${{ secrets.MONERO_DAEMON_ADDRESS }} \
             MONERO_RPC_URL=${{ secrets.MONERO_RPC_URL }} \
             MONERO_RPC_PASSWORD=${{ secrets.MONERO_RPC_PASSWORD }} \
             MONERO_WALLET_SEED=${{ secrets.MONERO_WALLET_SEED }} \
             MONERO_WALLET_PASSWORD=${{ secrets.MONERO_WALLET_PASSWORD }} \
             MONERO_WALLET_HEIGHT=${{ secrets.MONERO_WALLET_HEIGHT }} \
-
             KRAKEN_API_KEY=${{ secrets.KRAKEN_API_KEY }} \
             KRAKEN_API_SECRET=${{ secrets.KRAKEN_API_SECRET }} \
-
             MAX_NETWORK_FEE_PERCENT=${{ secrets.MAX_NETWORK_FEE_PERCENT }} \
             MAX_SLIPPAGE_PERCENT=${{ secrets.MAX_SLIPPAGE_PERCENT }} \
-
             BITCOIN_FEE_SOURCE=${{ secrets.BITCOIN_FEE_SOURCE }} \
             BITCOIN_FEE_RATE=${{ secrets.BITCOIN_FEE_RATE }} \
             LITECOIN_FEE_SOURCE=${{ secrets.LITECOIN_FEE_SOURCE }} \
