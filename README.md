@@ -16,6 +16,7 @@ Create a `.env` file as a copy of `.env.example` and set the values for the empt
 | Variable name | Required | Default | Description |
 | - | - | - | - |
 | `BITCOIN_WALLET_SEED` | Yes | - | Your BIP39 Bitcoin mnemonic seed. Used for all Bitcoin-like assets. |
+| `LITECOIN_WALLET_SEED` | Yes | - | Your BIP39 Litecoin mnemonic seed. |
 | `MONERO_WALLET_SEED` | Yes | - | Your 25 word Monero mnemonic seed. |
 | `MONERO_WALLET_HEIGHT` | Yes | - | The restore height of your Monero wallet. |
 | `ELECTRUM_RPC_PASSWORD` | Yes | - | A new strong password for your Electrum RPCs. |

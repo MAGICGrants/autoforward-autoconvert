@@ -19,9 +19,9 @@ def request_electrum_rpc(coin: Literal['btc', 'ltc', 'ltc-mweb'], method: str, p
     headers = {'content-type': 'application/json'}
 
     coin_to_auth = {
-        'btc': (env.BITCOIN_ELECTRUM_RPC_USERNAME, env.BITCOIN_ELECTRUM_RPC_PASSWORD),
-        'ltc': (env.LITECOIN_ELECTRUM_RPC_USERNAME, env.LITECOIN_ELECTRUM_RPC_PASSWORD),
-        'ltc-mweb': (env.LITECOIN_ELECTRUM_RPC_USERNAME, env.LITECOIN_ELECTRUM_RPC_PASSWORD)
+        'btc': (env.ELECTRUM_RPC_USERNAME, env.ELECTRUM_RPC_PASSWORD),
+        'ltc': (env.ELECTRUM_RPC_USERNAME, env.ELECTRUM_RPC_PASSWORD),
+        'ltc-mweb': (env.ELECTRUM_RPC_USERNAME, env.ELECTRUM_RPC_PASSWORD)
     }
 
     coin_to_url = {
