@@ -11,7 +11,6 @@ python = "^3.12"
 requests = "^2.32.3"
 bip-utils = "^2.9.3"
 
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -1,12 +1,14 @@
 services:
   btc-electrum:
     build:
-      context: ./btc-electrum
+      context: ./docker/btc-electrum
       args:
         VERSION: "4.5.5"
         CHECKSUM_SHA512: "3bdfce2187466fff20fd67736bdf257bf95d3517de47043be411ccda558a442b8fd81d6a8da094a39a1db39a7339dcd4282e73a7f00cf6bbd70473d7ce456b0b"
     container_name: btc-electrum
     restart: unless-stopped
+    volumes:
+      - btc-data:/home/electrum/.electrum
     environment:
       - ELECTRUM_RPC_USER=${BITCOIN_ELECTRUM_RPC_USERNAME}
       - ELECTRUM_RPC_PASSWORD=${BITCOIN_ELECTRUM_RPC_PASSWORD}
@@ -14,19 +16,44 @@ services:
 
   ltc-electrum:
     build:
-      context: ./ltc-electrum
+      context: ./docker/ltc-electrum
       args:
         VERSION: "release-9"
-        CHECKSUM_SHA512: "bdf9edef38a34b087e4c70bb663ac111545d92b48aa4e2292438ebc93948ccc6f2c1b7e1b6384097ce13a8298919316e4b8863f0186764c0712245567aa4d73f"
+        CHECKSUM_SHA512: "62248d5eba9b7d67facb767ff35706ef3e3dcd69c6b6fb8fb67b09bc07e52193ecd59f122388d401e854385b2e2b31fd802a9f5d56464472d893f5bc1bd394af"
     container_name: ltc-electrum
     restart: unless-stopped
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse:/dev/fuse
+    volumes:
+      - ltc-data:/home/electrum-ltc/.electrum
     environment:
       - ELECTRUM_RPC_USER=${LITECOIN_ELECTRUM_RPC_USERNAME}
       - ELECTRUM_RPC_PASSWORD=${LITECOIN_ELECTRUM_RPC_PASSWORD}
       - ELECTRUM_SERVER_ADDRESS=${LITECOIN_ELECTRUM_SERVER_ADDRESS}
 
+  # ltc-mweb-electrum:
+  #   build:
+  #     context: ./docker/ltc-electrum
+  #     args:
+  #       VERSION: "release-9"
+  #       CHECKSUM_SHA512: "62248d5eba9b7d67facb767ff35706ef3e3dcd69c6b6fb8fb67b09bc07e52193ecd59f122388d401e854385b2e2b31fd802a9f5d56464472d893f5bc1bd394af"
+  #   container_name: ltc-mweb-electrum
+  #   restart: unless-stopped
+  #   cap_add:
+  #     - SYS_ADMIN
+  #   devices:
+  #     - "/dev/fuse"
+  #   volumes:
+  #     - ltc-mweb-data:/home/electrum-ltc/.electrum
+  #   environment:
+  #     - ELECTRUM_RPC_USER=${LITECOIN_ELECTRUM_RPC_USERNAME}
+  #     - ELECTRUM_RPC_PASSWORD=${LITECOIN_ELECTRUM_RPC_PASSWORD}
+  #     - ELECTRUM_SERVER_ADDRESS=${LITECOIN_ELECTRUM_SERVER_ADDRESS}
+
   monero-wallet-rpc:
-    image: ghcr.io/sethforprivacy/simple-monero-wallet-rpc:latest
+    image: sethsimmons/simple-monero-wallet-rpc:latest
     restart: unless-stopped
     container_name: monero-wallet-rpc
     volumes:
@@ -51,10 +78,12 @@ services:
       - LITECOIN_ELECTRUM_RPC_URL=${LITECOIN_ELECTRUM_RPC_URL}
       - LITECOIN_ELECTRUM_RPC_USERNAME=${LITECOIN_ELECTRUM_RPC_USERNAME}
       - LITECOIN_ELECTRUM_RPC_PASSWORD=${LITECOIN_ELECTRUM_RPC_PASSWORD}
+      - LITECOIN_MWEB_ELECTRUM_RPC_URL=${LITECOIN_MWEB_ELECTRUM_RPC_URL}
       - BITCOIN_ELECTRUM_SERVER_ADDRESS=${BITCOIN_ELECTRUM_SERVER_ADDRESS}
       - LITECOIN_ELECTRUM_SERVER_ADDRESS=${LITECOIN_ELECTRUM_SERVER_ADDRESS}
       - BITCOIN_WALLET_SEED=${BITCOIN_WALLET_SEED}
       - LITECOIN_WALLET_SEED=${LITECOIN_WALLET_SEED}
+      - LITECOIN_MWEB_WALLET_SEED=${LITECOIN_MWEB_WALLET_SEED}
       - MONERO_RPC_URL=http://monero-wallet-rpc:18082/json_rpc
       - MONERO_RPC_USERNAME=${MONERO_RPC_USERNAME}
       - MONERO_RPC_PASSWORD=${MONERO_RPC_PASSWORD}
@@ -62,6 +91,8 @@ services:
       - MONERO_WALLET_PASSWORD=${MONERO_WALLET_PASSWORD}
       - MONERO_WALLET_HEIGHT=${MONERO_WALLET_HEIGHT}
     command: python ./src/seed-importer.py
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - btc-electrum
       - ltc-electrum
@@ -78,21 +109,17 @@ services:
       - BITCOIN_ELECTRUM_RPC_USERNAME=${BITCOIN_ELECTRUM_RPC_USERNAME}
       - BITCOIN_ELECTRUM_RPC_PASSWORD=${BITCOIN_ELECTRUM_RPC_PASSWORD}
       - LITECOIN_ELECTRUM_RPC_URL=${LITECOIN_ELECTRUM_RPC_URL}
+      - LITECOIN_MWEB_ELECTRUM_RPC_URL=${LITECOIN_MWEB_ELECTRUM_RPC_URL}
       - LITECOIN_ELECTRUM_RPC_USERNAME=${LITECOIN_ELECTRUM_RPC_USERNAME}
       - LITECOIN_ELECTRUM_RPC_PASSWORD=${LITECOIN_ELECTRUM_RPC_PASSWORD}
-      - BITCOIN_ELECTRUM_SERVER_ADDRESS=${BITCOIN_ELECTRUM_SERVER_ADDRESS}
-      - LITECOIN_ELECTRUM_SERVER_ADDRESS=${LITECOIN_ELECTRUM_SERVER_ADDRESS}
-      - BITCOIN_WALLET_SEED=${BITCOIN_WALLET_SEED}
-      - LITECOIN_WALLET_SEED=${LITECOIN_WALLET_SEED}
       - MONERO_RPC_URL=http://monero-wallet-rpc:18082/json_rpc
       - MONERO_RPC_USERNAME=${MONERO_RPC_USERNAME}
       - MONERO_RPC_PASSWORD=${MONERO_RPC_PASSWORD}
-      - MONERO_WALLET_SEED=${MONERO_WALLET_SEED}
-      - MONERO_WALLET_PASSWORD=${MONERO_WALLET_PASSWORD}
-      - MONERO_WALLET_HEIGHT=${MONERO_WALLET_HEIGHT}
       - KRAKEN_API_KEY=${KRAKEN_API_KEY}
       - KRAKEN_API_SECRET=${KRAKEN_API_SECRET}
     command: python ./src/autoforward.py
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - seed-importer
 
@@ -110,4 +137,7 @@ services:
       - seed-importer
 
 volumes:
+  btc-data:
+  ltc-data:
+  ltc-mweb-data:
   monero-wallet-rpc-data:

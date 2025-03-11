@@ -15,13 +15,20 @@ import env
 def get_time() -> str:
     return f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]'
 
-def request_electrum_rpc(coin: Literal['btc', 'ltc'], method: str, params: list | dict = []):
+def request_electrum_rpc(coin: Literal['btc', 'ltc', 'ltc-mweb'], method: str, params: list | dict = []):
     headers = {'content-type': 'application/json'}
 
-    if coin == 'btc':
-        auth = (env.BITCOIN_ELECTRUM_RPC_USERNAME, env.BITCOIN_ELECTRUM_RPC_PASSWORD)
-    else:
-        auth = (env.LITECOIN_ELECTRUM_RPC_USERNAME, env.LITECOIN_ELECTRUM_RPC_PASSWORD)
+    coin_to_auth = {
+        'btc': (env.BITCOIN_ELECTRUM_RPC_USERNAME, env.BITCOIN_ELECTRUM_RPC_PASSWORD),
+        'ltc': (env.LITECOIN_ELECTRUM_RPC_USERNAME, env.LITECOIN_ELECTRUM_RPC_PASSWORD),
+        'ltc-mweb': (env.LITECOIN_ELECTRUM_RPC_USERNAME, env.LITECOIN_ELECTRUM_RPC_PASSWORD)
+    }
+
+    coin_to_url = {
+        'btc': env.BITCOIN_ELECTRUM_RPC_URL,
+        'ltc': env.LITECOIN_ELECTRUM_RPC_URL,
+        'ltc-mweb': env.LITECOIN_MWEB_ELECTRUM_RPC_URL
+    }
 
     data = {
         'jsonrpc': '2.0',
@@ -31,10 +38,10 @@ def request_electrum_rpc(coin: Literal['btc', 'ltc'], method: str, params: list 
     }
 
     response =  requests.post(
-        env.BITCOIN_ELECTRUM_RPC_URL if coin == 'btc' else env.LITECOIN_ELECTRUM_RPC_URL, 
+         coin_to_url[coin], 
         headers=headers,
         data=json.dumps(data),
-        auth=auth
+        auth=coin_to_auth[coin]
     )
 
     response_json = response.json()
@@ -77,6 +84,9 @@ def open_bitcoin_wallet():
 
 def open_litecoin_wallet():
     request_electrum_rpc('ltc', 'load_wallet')
+
+def open_litecoin_mweb_wallet():
+    request_electrum_rpc('ltc-mweb', 'load_wallet')
 
 def open_monero_wallet() -> None:
     params = {'filename': 'foo', 'password': env.MONERO_WALLET_PASSWORD}
@@ -127,6 +137,15 @@ def wait_for_wallets():
     while 1:
         try:
             open_litecoin_wallet()
+            break
+        except:
+            time.sleep(10)
+    
+    print('Waiting for Litecoin MWEB wallet...')
+
+    while 1:
+        try:
+            open_litecoin_mweb_wallet()
             break
         except:
             time.sleep(10)

@@ -6,7 +6,6 @@ ARG CHECKSUM_SHA512
 ENV ELECTRUM_VERSION=$VERSION
 ENV ELECTRUM_USER=electrum
 ENV ELECTRUM_HOME=/home/$ELECTRUM_USER
-ENV ELECTRUM_NETWORK=mainnet
 
 RUN adduser -D $ELECTRUM_USER
 
@@ -18,13 +17,11 @@ RUN mkdir -p /data ${ELECTRUM_HOME} && \
 ENV ELECTRUM_CHECKSUM_SHA512 $CHECKSUM_SHA512
 
 RUN apk --no-cache add --virtual build-dependencies gcc musl-dev libsecp256k1 libsecp256k1-dev libressl-dev
-RUN wget https://github.com/ltcmweb/electrum-ltc/archive/refs/tags/${ELECTRUM_VERSION}.tar.gz
-RUN [ "${ELECTRUM_CHECKSUM_SHA512}  ${ELECTRUM_VERSION}.tar.gz" = "$(sha512sum ${ELECTRUM_VERSION}.tar.gz)" ]
+RUN wget https://download.electrum.org/${ELECTRUM_VERSION}/Electrum-${ELECTRUM_VERSION}.tar.gz
+RUN [ "${ELECTRUM_CHECKSUM_SHA512}  Electrum-${ELECTRUM_VERSION}.tar.gz" = "$(sha512sum Electrum-${ELECTRUM_VERSION}.tar.gz)" ]
 RUN echo -e "**************************\n SHA 512 Checksum OK\n**************************"
-RUN tar -xzf ${ELECTRUM_VERSION}.tar.gz
-RUN pip3 install cryptography google protobuf grpcio scrypt ${ELECTRUM_VERSION}.tar.gz
-RUN rm ${ELECTRUM_VERSION}.tar.gz
-RUN ln -s /usr/lib/libsecp256k1.so /usr/local/lib/python3.12/site-packages/electrum_ltc/libsecp256k1.so.0
+RUN pip3 install cryptography Electrum-${ELECTRUM_VERSION}.tar.gz
+RUN rm -f Electrum-${ELECTRUM_VERSION}.tar.gz
 
 RUN mkdir -p /data \
 	    ${ELECTRUM_HOME}/.electrum/wallets/ \
@@ -37,8 +34,8 @@ RUN mkdir -p /data \
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-USER $ELECTRUM_USER
-WORKDIR $ELECTRUM_HOME
+USER $BITCOIN_ELECTRUM_USER
+WORKDIR $BITCOIN_ELECTRUM_HOME
 VOLUME /data
 EXPOSE 7000
 

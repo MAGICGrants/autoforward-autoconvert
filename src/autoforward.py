@@ -8,29 +8,46 @@ from constants import MIN_BITCOIN_SEND_AMOUNT, MIN_LITECOIN_SEND_AMOUNT, MIN_MON
 import util
 import env
 
-def get_fee_rate(source: str, rate: str) -> int:
+ElectrumCoin = Literal['btc', 'ltc', 'ltc-mweb']
+
+def get_fee_rate(coin: ElectrumCoin) -> int:
+    coin_to_source: dict[ElectrumCoin, str] = {
+        'btc': env.BITCOIN_FEE_SOURCE,
+        'ltc': env.LITECOIN_FEE_SOURCE,
+        'ltc-mweb': env.LITECOIN_FEE_SOURCE
+    }
+
+    coin_to_rate: dict[ElectrumCoin, str] = {
+        'btc': env.BITCOIN_FEE_RATE,
+        'ltc': env.LITECOIN_FEE_RATE,
+        'ltc-mweb': env.LITECOIN_FEE_RATE
+    }
+
+    source = coin_to_source[coin]
+    rate = coin_to_rate[coin]
+
     return requests.get(source).json()[rate]
 
-def set_electrum_fee_rate(coin: Literal['btc', 'ltc'], rate: int, dynamic: bool):
+def set_electrum_fee_rate(coin: ElectrumCoin, rate: int, dynamic: bool):
     if dynamic:  # Fall back to the Electrum rate if there is an issue
         util.request_electrum_rpc(coin, 'setconfig', ['dynamic_fees', True])
     else:
         util.request_electrum_rpc(coin, 'setconfig', ['dynamic_fees', False])
         util.request_electrum_rpc(coin, 'setconfig', ['fee_per_kb', rate * 1000])
 
-def get_electrum_balance(coin: Literal['btc', 'ltc']) -> float:
+def get_electrum_balance(coin: ElectrumCoin) -> float:
     return float(util.request_electrum_rpc(coin, 'getbalance')['confirmed'])
 
-def create_psbt(coin: Literal['btc', 'ltc'], destination_address: str) -> str:
+def create_psbt(coin: ElectrumCoin, destination_address: str, unsigned = True) -> str:
     params = {
         'destination': destination_address,
         'amount': '!',
-        'unsigned': True # This way we can get the input amounts
+        'unsigned': unsigned # This way we can get the input amounts
     }
 
     return util.request_electrum_rpc(coin, 'payto', params)
 
-def get_psbt_data(coin: Literal['btc', 'ltc'], psbt: str) -> dict:
+def get_psbt_data(coin: ElectrumCoin, psbt: str) -> dict:
     return util.request_electrum_rpc(coin, 'deserialize', [psbt])
 
 def get_total_psbt_fee(psbt_data: dict) -> float:
@@ -47,10 +64,10 @@ def get_total_psbt_fee(psbt_data: dict) -> float:
     total_fee = total_fee_sats / 100000000
     return total_fee
 
-def sign_psbt(coin: Literal['btc', 'ltc'], psbt: str) -> str:
+def sign_psbt(coin: ElectrumCoin, psbt: str) -> str:
     return cast(str, util.request_electrum_rpc(coin, 'signtransaction', [psbt]))
 
-def broadcast_electrum_tx(coin: Literal['btc', 'ltc'], signed_tx: str):
+def broadcast_electrum_tx(coin: ElectrumCoin, signed_tx: str):
     util.request_electrum_rpc(coin, 'broadcast', [signed_tx])
 
 def get_monero_balance() -> float:
@@ -91,87 +108,62 @@ def get_new_kraken_address(asset: Literal['btc', 'ltc', 'xmr']) -> str:
 
     raise Exception(f'Kraken did not return a new address: {json.dumps(result, indent=2)}')
 
-def attempt_bitcoin_autoforward():
-    balance = get_electrum_balance('btc')
+def attempt_electrum_autoforward(coin: ElectrumCoin):
+    coin_upper = coin.upper()
+    balance = get_electrum_balance(coin)
+
+    coin_to_min_send: dict[ElectrumCoin, float] = {
+        'btc': MIN_BITCOIN_SEND_AMOUNT,
+        'ltc': MIN_LITECOIN_SEND_AMOUNT,
+        'ltc-mweb': MIN_LITECOIN_SEND_AMOUNT
+    }
+
+    min_send = coin_to_min_send[coin]
 
     if balance < MIN_BITCOIN_SEND_AMOUNT:
-        print(util.get_time(), f'Not enough Bitcoin balance to autoforward. (Balance: {balance}, Min Send: {MIN_BITCOIN_SEND_AMOUNT})')
+        print(util.get_time(), f'Not enough {coin_upper} balance to autoforward. (Balance: {balance}, Min. send: {min_send})')
         return
 
     try:
-        fee_rate = get_fee_rate(env.BITCOIN_FEE_SOURCE, env.BITCOIN_FEE_RATE)
-        set_electrum_fee_rate('btc', fee_rate, dynamic=False)
+        fee_rate = get_fee_rate(coin)
+        set_electrum_fee_rate(coin, fee_rate, dynamic=False)
     except:
-        set_electrum_fee_rate('btc', rate=0, dynamic=True)
-    address = get_new_kraken_address('btc')
+        set_electrum_fee_rate(coin, rate=0, dynamic=True)
+    address = get_new_kraken_address(coin if coin != 'ltc-mweb' else 'ltc')
 
-    try:
-        psbt = create_psbt('btc', address)
-    except requests.exceptions.HTTPError as http_error:
-        response_json = cast(dict, http_error.response.json())
+    # Electrum-ltc doesn't support deserializing mweb transactions, so we can't check total fee
+    if coin != 'ltc-mweb':
+        try:
+            psbt = create_psbt(coin, address)
+        except requests.exceptions.HTTPError as http_error:
+            response_json = cast(dict, http_error.response.json())
 
-        if response_json.get('error', {}).get('data', {}).get('exception', '') == 'NotEnoughFunds()':
-            print(util.get_time(), f'Not autoforwarding due to high transaction fee.')
-            return                 
+            if response_json.get('error', {}).get('data', {}).get('exception', '') == 'NotEnoughFunds()':
+                print(util.get_time(), f'Not autoforwarding due to high transaction fee.')
+                return                 
 
-        raise http_error
+            raise http_error
 
-    psbt_data = get_psbt_data('btc', psbt)
-    total_fee = get_total_psbt_fee(psbt_data)
-    amount = balance
+        psbt_data = get_psbt_data(coin, psbt)
+        total_fee = get_total_psbt_fee(psbt_data)
+        amount = balance
 
-    if total_fee / amount * 100 > env.MAX_NETWORK_FEE_PERCENT:
-        print(util.get_time(), f'Not autoforwarding due to high transaction fee {total_fee} BTC.')
-        return
+        if total_fee / amount * 100 > env.MAX_NETWORK_FEE_PERCENT:
+            print(util.get_time(), f'Not autoforwarding due to high transaction fee ({total_fee} {coin_upper}).')
+            return
 
-    signed_tx = sign_psbt('btc', psbt)
-    broadcast_electrum_tx('btc', signed_tx)
+        signed_tx = sign_psbt(coin, psbt)
+    else:
+        signed_tx = create_psbt(coin, address, unsigned=False)
 
-    print(util.get_time(), f'Autoforwarded {amount} BTC to {address}!')
-
-def attempt_litecoin_autoforward():
-    balance = get_electrum_balance('ltc')
-
-    if balance < MIN_LITECOIN_SEND_AMOUNT:
-        print(util.get_time(), f'Not enough Litecoin balance to autoforward. (Balance: {balance}, Min Send: {MIN_LITECOIN_SEND_AMOUNT})')
-        return
-
-    try:
-        fee_rate = get_fee_rate(env.LITECOIN_FEE_SOURCE, env.LITECOIN_FEE_RATE)
-        set_electrum_fee_rate('ltc', fee_rate, dynamic=False)
-    except:
-        set_electrum_fee_rate('ltc', rate=0, dynamic=True)
-    address = get_new_kraken_address('ltc')
-
-    try:
-        psbt = create_psbt('ltc', address)
-    except requests.exceptions.HTTPError as http_error:
-        response_json = cast(dict, http_error.response.json())
-
-        if response_json.get('error', {}).get('data', {}).get('exception', '') == 'NotEnoughFunds()':
-            print(util.get_time(), f'Not autoforwarding due to high transaction fee.')
-            return                 
-
-        raise http_error
-
-    psbt_data = get_psbt_data('ltc', psbt)
-    total_fee = get_total_psbt_fee(psbt_data)
-    amount = balance
-
-    if total_fee / amount * 100 > env.MAX_NETWORK_FEE_PERCENT:
-        print(util.get_time(), f'Not autoforwarding due to high transaction fee {total_fee} LTC.')
-        return
-
-    signed_tx = sign_psbt('ltc', psbt)
-    broadcast_electrum_tx('ltc', signed_tx)
-
-    print(util.get_time(), f'Autoforwarded {amount} LTC to {address}!')
+    broadcast_electrum_tx(coin, signed_tx)
+    print(util.get_time(), f'Autoforwarded {amount} {coin_upper} to {address}!')
 
 def attempt_monero_autoforward():
     balance = get_monero_balance()
 
     if balance < MIN_MONERO_SEND_AMOUNT:
-        print(util.get_time(), f'Not enough Monero balance to autoforward. (Balance: {balance}, Min Send: {MIN_MONERO_SEND_AMOUNT})')
+        print(util.get_time(), f'Not enough XMR balance to autoforward. (Balance: {balance}, Min Send: {MIN_MONERO_SEND_AMOUNT})')
         return
 
     address = get_new_kraken_address('xmr')
@@ -183,21 +175,27 @@ util.wait_for_wallets()
 
 while 1: 
     try:
-        attempt_bitcoin_autoforward()
+        attempt_electrum_autoforward('btc')
     except Exception as e:
-        print(util.get_time(), 'Error autoforwarding bitcoin:')
+        print(util.get_time(), 'Error autoforwarding Bitcoin:')
         print(traceback.format_exc())
 
     try:
-        attempt_litecoin_autoforward()
+        attempt_electrum_autoforward('ltc')
     except Exception as e:
         print(util.get_time(), 'Error autoforwarding litecoin:')
         print(traceback.format_exc())
+    
+    # try:
+    #     attempt_electrum_autoforward('ltc-mweb')
+    # except Exception as e:
+    #     print(util.get_time(), 'Error autoforwarding Litecoin MWEB:')
+    #     print(traceback.format_exc())
 
     try:
         attempt_monero_autoforward()
     except Exception as e:
-        print(util.get_time(), 'Error autoforwarding monero:')
+        print(util.get_time(), 'Error autoforwarding Monero:')
         print(traceback.format_exc())
 
     sleep(60 * 5)
