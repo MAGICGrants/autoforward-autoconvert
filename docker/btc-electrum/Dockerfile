@@ -6,7 +6,6 @@ ARG CHECKSUM_SHA512
 ENV ELECTRUM_VERSION=$VERSION
 ENV ELECTRUM_USER=electrum
 ENV ELECTRUM_HOME=/home/$ELECTRUM_USER
-ENV ELECTRUM_NETWORK=mainnet
 
 RUN adduser -D $ELECTRUM_USER
 
@@ -32,10 +31,12 @@ RUN mkdir -p /data \
     ln -sf ${ELECTRUM_HOME}/.electrum/ /data && \
 	chown -R ${ELECTRUM_USER} ${ELECTRUM_HOME}/.electrum /data
 
-USER $ELECTRUM_USER
-WORKDIR $ELECTRUM_HOME
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+USER $BITCOIN_ELECTRUM_USER
+WORKDIR $BITCOIN_ELECTRUM_HOME
 VOLUME /data
 EXPOSE 7000
 
-COPY docker-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["docker-entrypoint.sh"]
