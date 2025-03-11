@@ -72,7 +72,7 @@ def broadcast_electrum_tx(coin: ElectrumCoin, signed_tx: str):
 
 def get_monero_balance() -> float:
     params = {'account_index': 0}
-    return util.request_monero_rpc('get_balance', params)['balance'] / 1000000000000
+    return util.request_monero_rpc('get_balance', params)['unlocked_balance'] / 1000000000000
 
 def sweep_all_monero(address: str) -> None:
     params = {
