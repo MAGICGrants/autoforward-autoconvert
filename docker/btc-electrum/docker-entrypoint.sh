@@ -3,7 +3,7 @@ set -ex
 
 trap 'pkill -TERM -P1; electrum stop; exit 0' SIGTERM
 
-rm -f .electrum/daemon .electrum/daemon_rpc_socket
+rm -f .electrum/daemon
 electrum --offline setconfig rpcuser ${ELECTRUM_RPC_USER}
 electrum --offline setconfig rpcpassword ${ELECTRUM_RPC_PASSWORD}
 electrum --offline setconfig rpchost 0.0.0.0
