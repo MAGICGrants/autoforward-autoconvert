@@ -20,6 +20,8 @@ RUN [ "${ELECTRUM_CHECKSUM_SHA512}  electrum-ltc.appimage" = "$(sha512sum electr
 RUN echo -e "**************************\n SHA 512 Checksum OK\n**************************"
 COPY --chown=$ELECTRUM_USER:$ELECTRUM_USER ./docker-entrypoint.sh docker-entrypoint.sh
 RUN chmod +x ./electrum-ltc.appimage ./docker-entrypoint.sh
+RUN ./electrum-ltc.appimage --appimage-extract
+RUN rm ./electrum-ltc.appimage
 
 EXPOSE 7000
 ENTRYPOINT [ "./docker-entrypoint.sh" ]

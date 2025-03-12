@@ -22,10 +22,6 @@ services:
         CHECKSUM_SHA512: "62248d5eba9b7d67facb767ff35706ef3e3dcd69c6b6fb8fb67b09bc07e52193ecd59f122388d401e854385b2e2b31fd802a9f5d56464472d893f5bc1bd394af"
     container_name: ltc-electrum
     restart: unless-stopped
-    cap_add:
-      - SYS_ADMIN
-    devices:
-      - /dev/fuse:/dev/fuse
     volumes:
       - litecoin-data:/home/electrum-ltc/.electrum
     environment:
