@@ -22,49 +22,30 @@ def get_balance(asset: Literal['XBT', 'LTC', 'XMR']) -> str:
 
     return balance
 
-def get_bids(asset: Literal['XBT', 'LTC', 'XMR']):
-    return util.kraken_request('/0/public/Depth', {'pair': f'{asset}USD'})[f'X{asset}ZUSD']['bids']
-    
-def attempt_sell(asset: Literal['XBT', 'LTC', 'XMR']):
-    balance = float(get_balance(asset))
-    to_sell_amount = 0
+def get_orderbook(asset: Literal['XBT', 'LTC', 'XMR']):
+    return util.kraken_request('/0/public/Depth?count=1', {'pair': f'{asset}USD'})[f'X{asset}ZUSD']
 
+def attempt_sell(asset: Literal['XBT', 'XMR']):
     if balance < order_min[asset]:
         print(util.get_time(), f'Not enough {asset} balance to sell. (Balance: {balance}, Min order: {order_min[asset]})')
         return
 
-    bids = get_bids(asset)
-    market_price = float(bids[0][0])
+    orderbook = get_orderbook(asset)
+    mid_market_price = float(orderbook['bids'][0][0]) + ((float(orderbook['asks'][0][0]) - float(orderbook['bids'][0][0])) / 2) # Example 212.55+((212.72-212.55)/2) = 212.635
+    limit_price = mid_market_price * (1-env.MAX_SLIPPAGE_PERCENT/100) # Example 212.365*(1-0.5/100) = 211.303175
 
-    for bid in bids:
-        bid_price = float(bid[0]) # Example 161.05
-        bid_volume = float(bid[1])
-        slippage_percent = ((market_price - bid_price) / market_price) * 100 # Example ((161.06-161.05)/161.06)*100 = 0.0062088662610207
+    payload = {
+        'ordertype': 'limit',
+        'type': 'sell',
+        'pair': f'{asset}USD',
+        'volume': balance,
+        'price': limit_price,
+        'timeinforce': 'IOC', # Immediately fill order to extent possible, then kill
+        'validate': true # Remove this after tested
+    }
 
-        # Break loop if slippage is too high
-        if slippage_percent > env.MAX_SLIPPAGE_PERCENT:
-            break
-
-        # Otherwise, add the bid_volume to the to_sell_amount
-        to_sell_amount += bid_volume
-
-    if to_sell_amount > balance:
-        to_sell_amount = balance
-
-    # Sell asset if amount is greater than the minimum order amount
-    # Otherwise, it means that we could not get to the minimum amount under the max slippage
-    if to_sell_amount > order_min[asset]:
-        payload = {
-            'ordertype': 'market',
-            'type': 'sell',
-            'pair': f'{asset}USD',
-            'volume': to_sell_amount,
-        }
-
-        util.kraken_request('/0/private/AddOrder', payload)
-        print(util.get_time(), f'Sold {to_sell_amount} {asset}!')
-    else:
-        print(util.get_time(), f'Not selling {asset} due to high slippage.')
+    util.kraken_request('/0/private/AddOrder', payload)
+    print(util.get_time(), f'Selling up to {balance} at no less than {limit_price}')
 
 while 1:
     for asset in ['XBT', 'LTC', 'XMR']:
