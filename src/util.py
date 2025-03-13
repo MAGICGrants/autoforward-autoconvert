@@ -141,14 +141,14 @@ def wait_for_wallets():
         except:
             time.sleep(10)
     
-    # print('Waiting for Litecoin MWEB wallet...')
+    print('Waiting for Litecoin MWEB wallet...')
 
-    # while 1:
-    #     try:
-    #         open_litecoin_mweb_wallet()
-    #         break
-    #     except:
-    #         time.sleep(10)
+    while 1:
+        try:
+            open_litecoin_mweb_wallet()
+            break
+        except:
+            time.sleep(10)
 
     print('Waiting for Monero wallet...')
 

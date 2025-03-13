@@ -29,27 +29,23 @@ services:
       - ELECTRUM_RPC_PASSWORD=${ELECTRUM_RPC_PASSWORD}
       - ELECTRUM_SERVER_ADDRESS=${LITECOIN_ELECTRUM_SERVER_ADDRESS}
 
-  # ltc-mweb-electrum:
-  #   build:
-  #     context: ./docker/ltc-electrum
-  #     args:
-  #       VERSION: "release-9"
-  #       CHECKSUM_SHA512: "62248d5eba9b7d67facb767ff35706ef3e3dcd69c6b6fb8fb67b09bc07e52193ecd59f122388d401e854385b2e2b31fd802a9f5d56464472d893f5bc1bd394af"
-  #   container_name: ltc-mweb-electrum
-  #   restart: unless-stopped
-  #   cap_add:
-  #     - SYS_ADMIN
-  #   devices:
-  #     - "/dev/fuse"
-  #   volumes:
-  #     - litecoin-mweb-data:/home/electrum-ltc/.electrum
-  #   environment:
-  #     - ELECTRUM_RPC_USER=user
-  #     - ELECTRUM_RPC_PASSWORD=${ELECTRUM_RPC_PASSWORD}
-  #     - ELECTRUM_SERVER_ADDRESS=${LITECOIN_ELECTRUM_SERVER_ADDRESS}
+  ltc-mweb-electrum:
+    build:
+      context: ./docker/ltc-electrum
+      args:
+        VERSION: "release-9"
+        CHECKSUM_SHA512: "62248d5eba9b7d67facb767ff35706ef3e3dcd69c6b6fb8fb67b09bc07e52193ecd59f122388d401e854385b2e2b31fd802a9f5d56464472d893f5bc1bd394af"
+    container_name: ltc-mweb-electrum
+    restart: unless-stopped
+    volumes:
+      - litecoin-mweb-data:/home/electrum-ltc/.electrum
+    environment:
+      - ELECTRUM_RPC_USER=user
+      - ELECTRUM_RPC_PASSWORD=${ELECTRUM_RPC_PASSWORD}
+      - ELECTRUM_SERVER_ADDRESS=${LITECOIN_ELECTRUM_SERVER_ADDRESS}
 
   monero-wallet-rpc:
-    image: sethsimmons/simple-monero-wallet-rpc:latest
+    image: ghcr.io/sethforprivacy/simple-monero-wallet-rpc:latest
     restart: unless-stopped
     container_name: monero-wallet-rpc
     volumes:

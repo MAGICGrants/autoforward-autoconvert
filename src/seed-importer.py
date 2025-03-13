@@ -55,14 +55,14 @@ except Exception as e:
    print(util.get_time(), 'Error importing litecoin seed:')
    print(traceback.format_exc())
 
-# try:
-#    import_litecoin_mweb_seed()
-#    util.request_electrum_rpc('ltc-mweb', 'load_wallet')
-#    util.request_electrum_rpc('ltc-mweb', 'changegaplimit', [1000, 'iknowhatimdoing'])
-#    print('Litecoin mimblewimble seed has successfully been imported!')
-# except Exception as e:
-#    print(util.get_time(), 'Error importing litecoin mimblewimble seed:')
-#    print(traceback.format_exc())
+try:
+   import_litecoin_mweb_seed()
+   util.request_electrum_rpc('ltc-mweb', 'load_wallet')
+   util.request_electrum_rpc('ltc-mweb', 'changegaplimit', [1000, 'iknowhatimdoing'])
+   print('Litecoin mimblewimble seed has successfully been imported!')
+except Exception as e:
+   print(util.get_time(), 'Error importing litecoin mimblewimble seed:')
+   print(traceback.format_exc())
 
 try:
    import_monero_seed()
