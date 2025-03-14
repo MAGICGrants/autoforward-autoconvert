@@ -129,6 +129,7 @@ def attempt_electrum_autoforward(coin: ElectrumCoin):
         set_electrum_fee_rate(coin, fee_rate, dynamic=False)
     except:
         set_electrum_fee_rate(coin, rate=0, dynamic=True)
+
     address = get_new_kraken_address(coin if coin != 'ltc-mweb' else 'ltc')
 
     # Electrum-ltc doesn't support deserializing mweb transactions, so we can't check total fee
@@ -157,7 +158,7 @@ def attempt_electrum_autoforward(coin: ElectrumCoin):
         signed_tx = create_psbt(coin, address, unsigned=False)
 
     broadcast_electrum_tx(coin, signed_tx)
-    print(util.get_time(), f'Autoforwarded {amount} {coin_upper} to {address}!')
+    print(util.get_time(), f'Autoforwarded {balance} {coin_upper} to {address}!')
 
 def attempt_monero_autoforward():
     balance = get_monero_balance()
@@ -186,11 +187,11 @@ while 1:
         print(util.get_time(), 'Error autoforwarding litecoin:')
         print(traceback.format_exc())
     
-    # try:
-    #     attempt_electrum_autoforward('ltc-mweb')
-    # except Exception as e:
-    #     print(util.get_time(), 'Error autoforwarding Litecoin MWEB:')
-    #     print(traceback.format_exc())
+    try:
+        attempt_electrum_autoforward('ltc-mweb')
+    except Exception as e:
+        print(util.get_time(), 'Error autoforwarding Litecoin MWEB:')
+        print(traceback.format_exc())
 
     try:
         attempt_monero_autoforward()
