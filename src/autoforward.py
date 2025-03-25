@@ -1,5 +1,6 @@
 from typing import Literal, cast
 from time import sleep
+import random
 import traceback
 import requests
 import json
@@ -198,5 +199,6 @@ while 1:
         print(util.get_time(), 'Error autoforwarding Monero:')
         print(traceback.format_exc())
 
-    sleep(60 * 5)
+    delay = random.randint(270, 330)
+    sleep(delay)
 

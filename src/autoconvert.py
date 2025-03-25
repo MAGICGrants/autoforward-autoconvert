@@ -84,5 +84,5 @@ while 1:
             print(util.get_time(), f'Error attempting to sell {asset}:')
             print(traceback.format_exc())
 
-    delay = random.uniform(30, 90)
-    time.sleep(round(delay, 2))
+    delay = random.randint(30, 90)
+    time.sleep(delay)
