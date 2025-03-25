@@ -24,6 +24,7 @@ KRAKEN_API_SECRET = os.getenv('KRAKEN_API_SECRET', '')
 
 MAX_NETWORK_FEE_PERCENT = float(os.getenv('MAX_NETWORK_FEE_PERCENT', '5'))
 MAX_SLIPPAGE_PERCENT = float(os.getenv('MAX_SLIPPAGE_PERCENT', '0.5'))
+SETTLEMENT_CURRENCY = os.getenv('SETTLEMENT_CURRENCY', 'USD')
 
 BITCOIN_FEE_SOURCE = os.getenv('BITCOIN_FEE_SOURCE', 'https://mempool.space/api/v1/fees/recommended')
 BITCOIN_FEE_RATE = os.getenv('BITCOIN_FEE_RATE', 'halfHourFee')
