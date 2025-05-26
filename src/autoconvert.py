@@ -34,7 +34,7 @@ def make_trade(orderbook, payload):
 
 def attempt_sell(asset: Literal['XBT', 'LTC', 'XMR']):
     balance = get_balance(f'X{asset}')
-    if balance < order_min[asset]:
+    if float(balance) < order_min[asset]:
         print(util.get_time(), f'Not enough {asset} balance to sell. (Balance: {balance}, Min order: {order_min[asset]})')
         return
     
