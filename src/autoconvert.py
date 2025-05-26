@@ -23,7 +23,7 @@ def get_balance(settlement_kraken_ticker) -> str:
     return balance
 
 def get_orderbook(asset: Literal['XBT', 'LTC', 'XMR'], settlement_currency='USD', settlement_kraken_ticker='ZUSD'):
-    return util.kraken_request('/0/public/Depth?count=1', {'pair': f'{asset}{settlement_currency}'})[f'X{asset}{settlement_kraken_ticker}'] #TODO check
+    return util.kraken_request('/0/public/Depth?count=1', {'pair': f'{asset}{settlement_currency}'})[f'X{asset}{settlement_kraken_ticker}']
 
 def make_trade(orderbook, payload):
     mid_market_price = float(orderbook['bids'][0][0]) + ((float(orderbook['asks'][0][0]) - float(orderbook['bids'][0][0])) / 2) # Example 212.55+((212.72-212.55)/2) = 212.635
@@ -52,8 +52,7 @@ def attempt_sell(asset: Literal['XBT', 'LTC', 'XMR']):
         'type': 'sell',
         'pair': f'{asset}{settlement_currency}',
         'volume': balance,
-        'timeinforce': 'IOC', # Immediately fill order to extent possible, then cancel
-        'validate': true # Remove this after tested
+        'timeinforce': 'IOC' # Immediately fill order to extent possible, then cancel
     }
 
     if settlement_currency != asset:
