@@ -9,9 +9,8 @@ ENV ELECTRUM_HOME=/home/$ELECTRUM_USER
 
 RUN adduser -D $ELECTRUM_USER
 
-RUN mkdir -p /data ${ELECTRUM_HOME} && \
-	ln -sf /data ${ELECTRUM_HOME}/.electrum && \
-	chown ${ELECTRUM_USER} ${ELECTRUM_HOME}/.electrum /data
+RUN mkdir -p ${ELECTRUM_HOME}/.electrum && \
+	chown ${ELECTRUM_USER} ${ELECTRUM_HOME}/.electrum
 
 # IMPORTANT: always verify gpg signature before changing a hash here!
 ENV ELECTRUM_CHECKSUM_SHA512 $CHECKSUM_SHA512
@@ -23,20 +22,15 @@ RUN echo -e "**************************\n SHA 512 Checksum OK\n*****************
 RUN pip3 install cryptography Electrum-${ELECTRUM_VERSION}.tar.gz
 RUN rm -f Electrum-${ELECTRUM_VERSION}.tar.gz
 
-RUN mkdir -p /data \
-	    ${ELECTRUM_HOME}/.electrum/wallets/ \
+RUN mkdir -p ${ELECTRUM_HOME}/.electrum/wallets/ \
 	    ${ELECTRUM_HOME}/.electrum/testnet/wallets/ \
 	    ${ELECTRUM_HOME}/.electrum/regtest/wallets/ \
 	    ${ELECTRUM_HOME}/.electrum/simnet/wallets/ && \
-    ln -sf ${ELECTRUM_HOME}/.electrum/ /data && \
-	chown -R ${ELECTRUM_USER} ${ELECTRUM_HOME}/.electrum /data
+		chown -R ${ELECTRUM_USER} ${ELECTRUM_HOME}/.electrum
 
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-USER $BITCOIN_ELECTRUM_USER
-WORKDIR $BITCOIN_ELECTRUM_HOME
-VOLUME /data
+USER $ELECTRUM_USER
+WORKDIR $ELECTRUM_HOME
 EXPOSE 7000
 
+COPY docker-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["docker-entrypoint.sh"]
