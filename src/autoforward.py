@@ -79,6 +79,7 @@ def sweep_all_monero(address: str) -> None:
     params = {
         'account_index': 0,
         'address': address,
+        'subaddr_indices_all': True  # Without this, it sends from each subaddress separately
     }
 
     util.request_monero_rpc('sweep_all', params)
