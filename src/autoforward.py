@@ -1,4 +1,4 @@
-from typing import Literal, cast
+from typing import List, Literal, cast
 from time import sleep
 import random
 import traceback
@@ -67,6 +67,14 @@ def get_total_psbt_fee(psbt_data: dict) -> float:
 
 def sign_psbt(coin: ElectrumCoin, psbt: str) -> str:
     return cast(str, util.request_electrum_rpc(coin, 'signtransaction', [psbt]))
+
+def find_and_remove_offending_transactions(coin: ElectrumCoin):
+    history = cast(List[dict], util.request_electrum_rpc(coin, 'onchain_history'))
+
+    for tx in history:
+        if tx['confirmations'] == -2:
+            print(util.get_time(), f'Removing local transaction {tx['txid']} from history...')
+            util.request_electrum_rpc(coin, 'removelocaltx', [tx['txid']])
 
 def broadcast_electrum_tx(coin: ElectrumCoin, signed_tx: str):
     util.request_electrum_rpc(coin, 'broadcast', [signed_tx])
@@ -159,7 +167,19 @@ def attempt_electrum_autoforward(coin: ElectrumCoin):
     else:
         signed_tx = create_psbt(coin, address, unsigned=False)
 
-    broadcast_electrum_tx(coin, signed_tx)
+    try:
+        broadcast_electrum_tx(coin, signed_tx)
+    except Exception as e:
+        error_msg = e.__str__()
+
+        # https://github.com/MAGICGrants/autoforward-autoconvert/issues/34
+        if ('bad-txns-inputs-missingorspent' in error_msg):
+            print(util.get_time(), f'Got bad-txns-inputs-missingorspent error while broadcasting transaction. Looking for the offending transaction in history...')
+            find_and_remove_offending_transactions(coin)
+            broadcast_electrum_tx(coin, signed_tx)
+        else:
+            raise e
+
     print(util.get_time(), f'Autoforwarded {balance} {coin_upper} to {address}!')
 
 def attempt_monero_autoforward():
