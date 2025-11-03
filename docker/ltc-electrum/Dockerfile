@@ -15,7 +15,7 @@ RUN useradd -m $ELECTRUM_USER
 USER $ELECTRUM_USER
 WORKDIR $ELECTRUM_HOME
 
-RUN wget https://github.com/ltcmweb/electrum-ltc/releases/download/${ELECTRUM_VERSION}/electrum-ltc-${ELECTRUM_VERSION}-x86_64.AppImage -O electrum-ltc.appimage
+RUN wget https://github.com/ltc-electrum/electrum-ltc/releases/download/${ELECTRUM_VERSION}/electrum-ltc-${ELECTRUM_VERSION}-x86_64.AppImage -O electrum-ltc.appimage
 RUN [ "${ELECTRUM_CHECKSUM_SHA512}  electrum-ltc.appimage" = "$(sha512sum electrum-ltc.appimage)" ]
 RUN echo -e "**************************\n SHA 512 Checksum OK\n**************************"
 COPY --chown=$ELECTRUM_USER:$ELECTRUM_USER ./docker-entrypoint.sh docker-entrypoint.sh
