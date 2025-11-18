@@ -4,7 +4,7 @@ ARG VERSION
 ARG CHECKSUM_SHA512
 
 RUN apt update && \
-    apt install -y wget libfuse2 fuse3
+    apt install -y wget libfuse2 fuse3 python3-pyqt6
 
 ENV ELECTRUM_VERSION=$VERSION
 ENV ELECTRUM_USER=electrum

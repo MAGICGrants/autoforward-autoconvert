@@ -5,7 +5,7 @@ import traceback
 import requests
 import json
 
-from constants import MIN_BITCOIN_SEND_AMOUNT, MIN_LITECOIN_SEND_AMOUNT, MIN_MONERO_SEND_AMOUNT
+from constants import MIN_BITCOIN_SEND_AMOUNT_MAINNET, MIN_BITCOIN_SEND_AMOUNT_TESTNET, MIN_LITECOIN_SEND_AMOUNT_MAINNET, MIN_LITECOIN_SEND_AMOUNT_TESTNET, MIN_MONERO_SEND_AMOUNT_MAINNET, MIN_MONERO_SEND_AMOUNT_TESTNET
 import util
 import env
 
@@ -29,20 +29,25 @@ def get_fee_rate(coin: ElectrumCoin) -> int:
 
     return requests.get(source).json()[rate]
 
-def set_electrum_fee_rate(coin: ElectrumCoin, rate: int, dynamic: bool):
+def set_electrum_fee_rate(coin: ElectrumCoin, rate: int = None, dynamic: bool = None):
     if dynamic:  # Fall back to the Electrum rate if there is an issue
-        util.request_electrum_rpc(coin, 'setconfig', ['dynamic_fees', True])
+        util.request_electrum_rpc(coin, 'setconfig', ['fee_policy.default', 'eta:3'])
+    elif rate:
+        util.request_electrum_rpc(coin, 'setconfig', ['fee_policy.default', f'feerate:{rate * 1000}'])
     else:
-        util.request_electrum_rpc(coin, 'setconfig', ['dynamic_fees', False])
-        util.request_electrum_rpc(coin, 'setconfig', ['fee_per_kb', rate * 1000])
+        raise Exception('Either rate or dynamic=True must be provided')
 
 def get_electrum_balance(coin: ElectrumCoin) -> float:
     return float(util.request_electrum_rpc(coin, 'getbalance')['confirmed'])
 
-def create_psbt(coin: ElectrumCoin, destination_address: str, unsigned = True) -> str:
+def get_electrum_unused_address(coin: ElectrumCoin) -> str:
+    return util.request_electrum_rpc(coin, 'getunusedaddress')
+
+def create_psbt(coin: ElectrumCoin, destination_address: str, fee_rate: int = None, unsigned = True) -> str:
     params = {
         'destination': destination_address,
         'amount': '!',
+        'feerate': fee_rate,
         'unsigned': unsigned # This way we can get the input amounts
     }
 
@@ -51,14 +56,25 @@ def create_psbt(coin: ElectrumCoin, destination_address: str, unsigned = True) -
 def get_psbt_data(coin: ElectrumCoin, psbt: str) -> dict:
     return util.request_electrum_rpc(coin, 'deserialize', [psbt])
 
-def get_total_psbt_fee(psbt_data: dict) -> float:
+def get_tx_output_amount(coin: ElectrumCoin, tx_id: str, output_index: int) -> int:
+    serialized_tx = util.request_electrum_rpc(coin, 'gettransaction', [tx_id])
+    tx = util.request_electrum_rpc(coin, 'deserialize', [serialized_tx])
+
+    for i, output in enumerate(tx['outputs']):
+        if i == output_index:
+            return output['value_sats']
+
+    raise Exception(f'Output {output_index} not found in {coin} transaction {tx_id}')
+
+def get_total_psbt_fee(coin: ElectrumCoin, tx: dict) -> float:
     inputs_sum_sats = 0
     outputs_sum_sats = 0
 
-    for _input in psbt_data['inputs']:
-        inputs_sum_sats += cast(int, _input['value_sats'])
+    for _input in tx['inputs']:
+        input_amount = get_tx_output_amount(coin, _input['prevout_hash'], _input['prevout_n'])
+        inputs_sum_sats += input_amount
     
-    for _output in psbt_data['outputs']:
+    for _output in tx['outputs']:
         outputs_sum_sats += cast(int, _output['value_sats'])
 
     total_fee_sats = inputs_sum_sats - outputs_sum_sats
@@ -82,6 +98,9 @@ def broadcast_electrum_tx(coin: ElectrumCoin, signed_tx: str):
 def get_monero_balance() -> float:
     params = {'account_index': 0}
     return util.request_monero_rpc('get_balance', params)['unlocked_balance'] / 1000000000000
+
+def get_monero_unused_address() -> str:
+    return util.request_monero_rpc('get_address', {'account_index': 0})
 
 def sweep_all_monero(address: str) -> None:
     params = {
@@ -122,25 +141,34 @@ def attempt_electrum_autoforward(coin: ElectrumCoin):
     coin_upper = coin.upper()
     balance = get_electrum_balance(coin)
 
-    coin_to_min_send: dict[ElectrumCoin, float] = {
-        'btc': MIN_BITCOIN_SEND_AMOUNT,
-        'ltc': MIN_LITECOIN_SEND_AMOUNT,
-        'ltc-mweb': MIN_LITECOIN_SEND_AMOUNT
+    coin_to_min_send_mainnet: dict[ElectrumCoin, float] = {
+        'btc': MIN_BITCOIN_SEND_AMOUNT_MAINNET,
+        'ltc': MIN_LITECOIN_SEND_AMOUNT_MAINNET,
+        'ltc-mweb': MIN_LITECOIN_SEND_AMOUNT_MAINNET
     }
 
-    min_send = coin_to_min_send[coin]
+    coin_to_min_send_testnet: dict[ElectrumCoin, float] = {
+        'btc': MIN_BITCOIN_SEND_AMOUNT_TESTNET,
+        'ltc': MIN_LITECOIN_SEND_AMOUNT_TESTNET,
+        'ltc-mweb': MIN_LITECOIN_SEND_AMOUNT_TESTNET
+    }
 
-    if balance < MIN_BITCOIN_SEND_AMOUNT:
+    min_send = coin_to_min_send_testnet[coin] if env.TESTNET == '1' else coin_to_min_send_mainnet[coin]
+
+    if balance < min_send:
         print(util.get_time(), f'Not enough {coin_upper} balance to autoforward. (Balance: {balance}, Min. send: {min_send})')
         return
 
     try:
         fee_rate = get_fee_rate(coin)
-        set_electrum_fee_rate(coin, fee_rate, dynamic=False)
+        set_electrum_fee_rate(coin, fee_rate)
     except:
-        set_electrum_fee_rate(coin, rate=0, dynamic=True)
+        set_electrum_fee_rate(coin, dynamic=True)
 
-    address = get_new_kraken_address(coin if coin != 'ltc-mweb' else 'ltc')
+    if env.TESTNET == '1':
+        address = get_electrum_unused_address(coin)
+    else:
+        address = get_new_kraken_address(coin if coin != 'ltc-mweb' else 'ltc')
 
     # Electrum-ltc doesn't support deserializing mweb transactions, so we can't check total fee
     if coin != 'ltc-mweb':
@@ -155,8 +183,8 @@ def attempt_electrum_autoforward(coin: ElectrumCoin):
 
             raise http_error
 
-        psbt_data = get_psbt_data(coin, psbt)
-        total_fee = get_total_psbt_fee(psbt_data)
+        tx = get_psbt_data(coin, psbt)
+        total_fee = get_total_psbt_fee(coin, tx)
         amount = balance
 
         if total_fee / amount * 100 > env.MAX_NETWORK_FEE_PERCENT:
@@ -185,11 +213,17 @@ def attempt_electrum_autoforward(coin: ElectrumCoin):
 def attempt_monero_autoforward():
     balance = get_monero_balance()
 
-    if balance < MIN_MONERO_SEND_AMOUNT:
-        print(util.get_time(), f'Not enough XMR balance to autoforward. (Balance: {balance}, Min Send: {MIN_MONERO_SEND_AMOUNT})')
+    min_send = MIN_MONERO_SEND_AMOUNT_TESTNET if env.TESTNET == '1' else MIN_MONERO_SEND_AMOUNT_MAINNET
+
+    if balance < min_send:
+        print(util.get_time(), f'Not enough XMR balance to autoforward. (Balance: {balance}, Min Send: {min_send})')
         return
 
-    address = get_new_kraken_address('xmr')
+    if env.TESTNET == '1':
+        address = get_monero_unused_address()
+    else:
+        address = get_new_kraken_address('xmr')
+
     sweep_all_monero(address)
     print(util.get_time(), f'Autoforwarded {balance} XMR to {address}!')
 

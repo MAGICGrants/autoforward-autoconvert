@@ -3,13 +3,14 @@ services:
     build:
       context: ./docker/btc-electrum
       args:
-        VERSION: "4.5.5"
-        CHECKSUM_SHA512: "3bdfce2187466fff20fd67736bdf257bf95d3517de47043be411ccda558a442b8fd81d6a8da094a39a1db39a7339dcd4282e73a7f00cf6bbd70473d7ce456b0b"
+        VERSION: "4.6.2"
+        CHECKSUM_SHA512: "890c1fae4cd2da5f1fea3f07c1c6b537f9557177b86e23c40333ec83743ed46182ec74e43a27416a3eaa9704d87d0a1702d0a789b23467bcc68a17d638b43655"
     container_name: btc-electrum
     restart: unless-stopped
     volumes:
       - bitcoin-data:/home/electrum/.electrum
     environment:
+      - TESTNET=${TESTNET}
       - ELECTRUM_RPC_USER=user
       - ELECTRUM_RPC_PASSWORD=${ELECTRUM_RPC_PASSWORD}
       - ELECTRUM_SERVER_ADDRESS=${BITCOIN_ELECTRUM_SERVER_ADDRESS}
@@ -25,6 +26,7 @@ services:
     volumes:
       - litecoin-data:/home/electrum-ltc/.electrum
     environment:
+      - TESTNET=${TESTNET}
       - ELECTRUM_RPC_USER=user
       - ELECTRUM_RPC_PASSWORD=${ELECTRUM_RPC_PASSWORD}
       - ELECTRUM_SERVER_ADDRESS=${LITECOIN_ELECTRUM_SERVER_ADDRESS}
@@ -40,23 +42,24 @@ services:
     volumes:
       - litecoin-mweb-data:/home/electrum-ltc/.electrum
     environment:
+      - TESTNET=${TESTNET}
       - ELECTRUM_RPC_USER=user
       - ELECTRUM_RPC_PASSWORD=${ELECTRUM_RPC_PASSWORD}
       - ELECTRUM_SERVER_ADDRESS=${LITECOIN_ELECTRUM_SERVER_ADDRESS}
 
   monero-wallet-rpc:
-    image: ghcr.io/sethforprivacy/simple-monero-wallet-rpc:latest
+    build:
+      context: ./docker/monero-wallet-rpc
     restart: unless-stopped
     container_name: monero-wallet-rpc
     volumes:
       - monero-wallet-rpc-data:/home/monero
     command:
-      - "--trusted-daemon"
-      - "--rpc-bind-port=18082"
-      - "--rpc-login=user:${MONERO_RPC_PASSWORD}"
-      - "--daemon-address=${MONERO_DAEMON_ADDRESS}"
-      - "--wallet-dir=/home/monero/wallet"
-      - "--log-level=4"
+      - --trusted-daemon
+      - --rpc-bind-port=18082
+      - --rpc-login=user:${MONERO_RPC_PASSWORD}
+      - --daemon-address=${MONERO_DAEMON_ADDRESS}
+      - --wallet-dir=/home/monero/wallet
 
   seed-importer:
     build:
@@ -64,6 +67,7 @@ services:
     container_name: seed-importer
     environment:
       - PYTHONUNBUFFERED=1
+      - TESTNET=${TESTNET}
       - BITCOIN_ELECTRUM_RPC_URL=http://btc-electrum:7000
       - LITECOIN_ELECTRUM_RPC_URL=http://ltc-electrum:7000
       - LITECOIN_MWEB_ELECTRUM_RPC_URL=http://ltc-mweb-electrum:7000
@@ -91,6 +95,7 @@ services:
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
+      - TESTNET=${TESTNET}
       - BITCOIN_ELECTRUM_RPC_URL=http://btc-electrum:7000
       - LITECOIN_ELECTRUM_RPC_URL=http://ltc-electrum:7000
       - LITECOIN_MWEB_ELECTRUM_RPC_URL=http://ltc-mweb-electrum:7000
@@ -114,6 +119,7 @@ services:
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
+      - TESTNET=${TESTNET}
       - KRAKEN_API_KEY=${KRAKEN_API_KEY}
       - KRAKEN_API_SECRET=${KRAKEN_API_SECRET}
     command: python ./src/autoconvert.py
