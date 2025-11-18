@@ -9,7 +9,6 @@ import base64
 import hmac
 import json
 import time
-
 import env
 
 def get_time() -> str:
@@ -109,6 +108,15 @@ def wait_for_rpc():
             request_electrum_rpc('ltc', 'getinfo')
             break
         except:
+            
+            time.sleep(10)
+
+    while 1:
+        try:
+            request_electrum_rpc('ltc-mweb', 'getinfo')
+            break
+        except:
+            
             time.sleep(10)
     
     print('Waiting for Monero RPC...')

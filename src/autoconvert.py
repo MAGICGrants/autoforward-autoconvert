@@ -1,8 +1,7 @@
-from typing import Literal, cast
+import math
 import traceback
 import random
 import time
-
 import util
 import env
 
@@ -86,28 +85,32 @@ def attempt_sell(asset, settlement_currency, settlement_kraken_ticker):
     else:
         print(f'No balance for {asset}; skipping')
 
+if __name__ == '__main__':
+    if env.TESTNET == '1':
+        print('Testnet mode enabled. Autoconvert will now sleep forever.')
+        time.sleep(999999999)
 
-while 1:
-    # First, get the settlement currency formatted correctly
-    settlement_currency = env.SETTLEMENT_CURRENCY
-    # https://support.kraken.com/hc/en-us/articles/360001206766-Bitcoin-currency-code-XBT-vs-BTC
-    if settlement_currency in ['AUD', 'CAD', 'EUR', 'GBP', 'JPY', 'USD']:
-        settlement_kraken_ticker = 'Z' + settlement_currency
-    elif settlement_currency in ['ETC', 'ETH', 'LTC', 'MLN', 'REP', 'XBT', 'XDG', 'XLM', 'XMR', 'XRP', 'ZEC']:
-        settlement_kraken_ticker = 'X' + settlement_currency
-    else:
-        settlement_kraken_ticker = settlement_currency
+    while 1:
+        # First, get the settlement currency formatted correctly
+        settlement_currency = env.SETTLEMENT_CURRENCY
+        # https://support.kraken.com/hc/en-us/articles/360001206766-Bitcoin-currency-code-XBT-vs-BTC
+        if settlement_currency in ['AUD', 'CAD', 'EUR', 'GBP', 'JPY', 'USD']:
+            settlement_kraken_ticker = 'Z' + settlement_currency
+        elif settlement_currency in ['ETC', 'ETH', 'LTC', 'MLN', 'REP', 'XBT', 'XDG', 'XLM', 'XMR', 'XRP', 'ZEC']:
+            settlement_kraken_ticker = 'X' + settlement_currency
+        else:
+            settlement_kraken_ticker = settlement_currency
 
-    # Then, initiate the selling process for each supported asset unless it's already the settlement currency
-    for asset in ['XBT', 'LTC', 'XMR']:
-        try:
-            if settlement_currency != asset:
-                attempt_sell(asset, settlement_currency, settlement_kraken_ticker)
-            else:
-                print(f'Not converting {asset} since it is already in the settlement currency')
-        except Exception as e:
-            print(util.get_time(), f'Error attempting to sell {asset}:')
-            print(traceback.format_exc())
+        # Then, initiate the selling process for each supported asset unless it's already the settlement currency
+        for asset in ['XBT', 'LTC', 'XMR']:
+            try:
+                if settlement_currency != asset:
+                    attempt_sell(asset, settlement_currency, settlement_kraken_ticker)
+                else:
+                    print(f'Not converting {asset} since it is already in the settlement currency')
+            except Exception as e:
+                print(util.get_time(), f'Error attempting to sell {asset}:')
+                print(traceback.format_exc())
 
-    delay = random.randint(30, 90)
-    time.sleep(delay)
+        delay = random.randint(30, 90)
+        time.sleep(delay)
