@@ -122,6 +122,7 @@ services:
       - TESTNET=${TESTNET}
       - KRAKEN_API_KEY=${KRAKEN_API_KEY}
       - KRAKEN_API_SECRET=${KRAKEN_API_SECRET}
+      - SETTLEMENT_CURRENCY=${SETTLEMENT_CURRENCY}
     command: python ./src/autoconvert.py
     depends_on:
       - seed-importer

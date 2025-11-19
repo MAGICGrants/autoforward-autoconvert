@@ -15,7 +15,7 @@ def get_balance(kraken_ticker):
 
 
 def get_pair_details(quote_curency, base_currency, base_kraken_ticker):
-    response = util.kraken_request('/0/public/AssetPairs', {'pair': f'{quote_curency}{base_currency}'})[f'X{quote_curency}{base_kraken_ticker}']
+    response = util.kraken_request('/0/public/AssetPairs', {'pair': f'{quote_curency}{base_currency}'})[f'{quote_curency}{base_kraken_ticker}']
     order_min = float(response['ordermin'])
     trade_decimals = int(response['pair_decimals'])
     return order_min, trade_decimals
@@ -29,7 +29,7 @@ def prepare_and_make_trade(balance, quote_currency, base_currency, base_kraken_t
     # We ensure we have more than the minimum to trade
     if balance > order_min:
         # We get the current orderbook to calculate the mid market price
-        orderbook = util.kraken_request('/0/public/Depth?count=1', {'pair': f'{quote_currency}{base_currency}'})[f'X{quote_currency}{base_kraken_ticker}']
+        orderbook = util.kraken_request('/0/public/Depth?count=1', {'pair': f'{quote_currency}{base_currency}'})[f'{quote_currency}{base_kraken_ticker}']
 
         # We make the trade
         mid_market_price = float(orderbook['bids'][0][0]) + ((float(orderbook['asks'][0][0]) - float(orderbook['bids'][0][0])) / 2) # Example 212.55+((212.72-212.55)/2) = 212.635
@@ -87,7 +87,7 @@ def attempt_sell(asset, settlement_currency, settlement_kraken_ticker):
 
 if __name__ == '__main__':
     if env.TESTNET == '1':
-        print('Testnet mode enabled. Autoconvert will now sleep forever.')
+        print('Testnet mode enabled. Autoconvert will now sleep forever. Zz Zz Zz...')
         time.sleep(999999999)
 
     while 1:

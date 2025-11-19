@@ -45,5 +45,6 @@ jobs:
             BITCOIN_FEE_RATE="${{ secrets.BITCOIN_FEE_RATE }}" \
             LITECOIN_FEE_SOURCE="${{ secrets.LITECOIN_FEE_SOURCE }}" \
             LITECOIN_FEE_RATE="${{ secrets.LITECOIN_FEE_RATE }}" \
+            SETTLEMENT_CURRENCY="${{ secrets.SETTLEMENT_CURRENCY }}" \
             docker compose up -d --build
           EOF
