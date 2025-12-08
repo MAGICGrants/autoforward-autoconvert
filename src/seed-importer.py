@@ -3,6 +3,7 @@ from bip_utils import Bip39SeedGenerator, Bip84, Bip84Coins
 import traceback
 import util
 import env
+from constants import MONERO_WALLET_FILENAME
 
 def get_xprv_from_mnemonic(coin: Literal['btc', 'ltc',], mnemonic: str ) -> str:
    if env.TESTNET == '1':
@@ -38,7 +39,7 @@ def import_litecoin_mweb_seed():
 
 def import_monero_seed():
    params = {
-      'filename': 'foo',
+      'filename': MONERO_WALLET_FILENAME,
       'seed': env.MONERO_WALLET_SEED,
       'password': env.MONERO_WALLET_PASSWORD,
       'restore_height': env.MONERO_WALLET_HEIGHT,
