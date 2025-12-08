@@ -104,6 +104,7 @@ services:
       - MONERO_RPC_URL=http://monero-wallet-rpc:18082/json_rpc
       - MONERO_RPC_USERNAME=user
       - MONERO_RPC_PASSWORD=${MONERO_RPC_PASSWORD}
+      - MONERO_WALLET_PASSWORD=${MONERO_WALLET_PASSWORD}
       - KRAKEN_API_KEY=${KRAKEN_API_KEY}
       - KRAKEN_API_SECRET=${KRAKEN_API_SECRET}
     command: python ./src/autoforward.py

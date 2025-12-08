@@ -10,6 +10,7 @@ import hmac
 import json
 import time
 import env
+from constants import MONERO_WALLET_FILENAME
 
 def get_time() -> str:
     return f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}]'
@@ -88,7 +89,7 @@ def open_litecoin_mweb_wallet():
     request_electrum_rpc('ltc-mweb', 'load_wallet')
 
 def open_monero_wallet() -> None:
-    params = {'filename': 'foo', 'password': env.MONERO_WALLET_PASSWORD}
+    params = {'filename': MONERO_WALLET_FILENAME, 'password': env.MONERO_WALLET_PASSWORD}
     request_monero_rpc('open_wallet', params)
 
 def wait_for_rpc():
