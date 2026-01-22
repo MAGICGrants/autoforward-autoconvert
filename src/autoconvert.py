@@ -55,7 +55,8 @@ def attempt_sell(asset, settlement_currency, settlement_kraken_ticker):
             payload['pair'] = f'{asset}{settlement_currency}'
             payload['volume'] = balance
             prepare_and_make_trade(balance, asset, settlement_currency, settlement_kraken_ticker, payload)
-        except:
+        except Exception as e:
+            print('prepare_and_make_trade error: ', e)
             # If we are here, then there is an issue getting the pair details and executing the trade
             # Either there is a Kraken error, or this trading pair does not exist
             print(f'Attempting to sell indirectly via other assets')
