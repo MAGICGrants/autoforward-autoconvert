@@ -200,6 +200,8 @@ def kraken_request(path: str, payload = {}) -> dict:
     response_json = response.json()
 
     if response_json['error']:
+        print(f'request to kraken at {path} failed:')
+        print(response_json)
         raise Exception(response_json)
     
     return response_json['result']
