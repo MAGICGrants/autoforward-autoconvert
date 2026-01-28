@@ -57,7 +57,16 @@ def get_psbt_data(coin: ElectrumCoin, psbt: str) -> dict:
     return util.request_electrum_rpc(coin, 'deserialize', [psbt])
 
 def get_tx_output_amount(coin: ElectrumCoin, tx_id: str, output_index: int) -> int:
-    serialized_tx = util.request_electrum_rpc(coin, 'gettransaction', [tx_id])
+    try:
+        serialized_tx = util.request_electrum_rpc(coin, 'gettransaction', [tx_id])
+    except Exception as e:
+        if 'No such mempool or blockchain transaction' in e.__str__():
+            print(util.get_time(), f'Got "No such mempool or blockchain transaction" error while getting transaction outputs. Looking for the offending transaction in history...')
+            find_and_remove_offending_transactions(coin)
+            serialized_tx = util.request_electrum_rpc(coin, 'gettransaction', [tx_id])
+        else:
+            raise e
+
     tx = util.request_electrum_rpc(coin, 'deserialize', [serialized_tx])
 
     for i, output in enumerate(tx['outputs']):
