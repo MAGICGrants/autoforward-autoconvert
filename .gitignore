@@ -1,3 +1,4 @@
 .venv
 .env
 .electrs-cookie
+__pycache__
