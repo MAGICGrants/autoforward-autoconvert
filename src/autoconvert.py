@@ -5,14 +5,29 @@ import time
 import util
 import env
 
+balances = {}
+asset_name_to_id = {}
 
-def get_balance(asset_id):
+def load_asset_names_and_ids():
+    global asset_name_to_id
+    result = util.kraken_request('/0/public/Assets')
+    asset_name_to_id = {asset['altname']: asset['assetid'] for asset in result}
+
+
+def load_balances():
+    global balances
     balances = util.kraken_request('/0/private/Balance')
-    print(f'Balances: {balances}')
-    balance = 0
+
+
+def get_balance(asset: str) -> float:
+    global balances
+    
+    asset_id = asset_name_to_id[asset]
+
     if asset_id in balances:
-        balance = float(balances[asset_id])
-    return balance
+        return float(balances[asset_id])
+    else:
+        return 0
 
 
 def get_pair_details(quote_curency, base_currency):
@@ -47,58 +62,64 @@ def prepare_and_make_trade(balance, quote_currency, base_currency, payload):
         print(f'{quote_currency} balance {balance} is below the minimum of {order_min}; skipping')
 
 
-def attempt_sell(asset, settlement_currency):
+def attempt_sell(asset: str, settlement_currency: str):
+    balance = get_balance(asset)
+
+    if balance == 0:
+        print(f'No balance for {asset}; skipping')
+        return
+
     payload = {
         'ordertype': 'limit',
         'timeinforce': 'IOC' # Immediately fill order to extent possible, then cancel
     }
-    # First, check to see if the asset has a nonzero balance
-    balance = get_balance(f'X{asset}')
-    if balance > 0:
-        try:
-            payload['type'] = 'sell'
-            payload['pair'] = f'{asset}{settlement_currency}'
-            payload['volume'] = balance
-            prepare_and_make_trade(balance, asset, settlement_currency, payload)
-        except Exception as e:
-            print('prepare_and_make_trade error: ', e)
-            # If we are here, then there is an issue getting the pair details and executing the trade
-            # Either there is a Kraken error, or this trading pair does not exist
-            print(f'Attempting to sell indirectly via other assets')
-            for intermediary_currency in ['USD', 'USDT', 'USDC', 'EUR', 'XBT']:
-                # NOTE: it's possible for the conversion to be "stuck" in the intermediary currency if there is not enough to convert out of
-                # Remove any intermediary currencies that you don't want value to get potentially stuck in
-                # Conversion fees apply: https://www.kraken.com/features/fee-schedule#spot-crypto
-                # Fees are lower for trades between stablecoins/FX, such as USDT/EUR
-                try:
-                    get_pair_details(asset, intermediary_currency)  # Using asset as quote currency and intermediary as base currency
-                    get_pair_details(settlement_currency, intermediary_currency)  # Using settlement currency as quote currency and intermediary as base currency
-                    # If we made it here, then a route through the intermediary currency exists (we would have gotten an error with get_pair_details if it didn't)
-                    # Start the first trade, selling the asset for the base intermediary currency
-                    payload['type'] = 'sell'
-                    payload['pair'] = f'{asset}{intermediary_currency}'
-                    payload['volume'] = balance
-                    prepare_and_make_trade(balance, asset, intermediary_currency, payload)
-                    intermediary_balance = get_balance(intermediary_currency)
-                    # Start the second trade, buying the quote settlement currency with the base intermediary currency balance
-                    payload['type'] = 'buy'
-                    payload['pair'] = f'{settlement_currency}{intermediary_currency}'
-                    payload['volume'] = intermediary_balance
-                    prepare_and_make_trade(balance, settlement_currency, intermediary_currency, payload)
-                except:
-                    print(f'No path found through {intermediary_currency}')
-                    continue
-    else:
-        print(f'No balance for {asset}; skipping')
+
+    try:
+        payload['type'] = 'sell'
+        payload['pair'] = f'{asset}{settlement_currency}'
+        payload['volume'] = balance
+        prepare_and_make_trade(balance, asset, settlement_currency, payload)
+    except Exception as e:
+        print('prepare_and_make_trade error: ', e)
+        # If we are here, then there is an issue getting the pair details and executing the trade
+        # Either there is a Kraken error, or this trading pair does not exist
+        print(f'Attempting to sell indirectly via other assets')
+
+        for intermediary_currency in ['USD', 'USDT', 'USDC', 'EUR', 'XBT']:
+            # NOTE: it's possible for the conversion to be "stuck" in the intermediary currency if there is not enough to convert out of
+            # Remove any intermediary currencies that you don't want value to get potentially stuck in
+            # Conversion fees apply: https://www.kraken.com/features/fee-schedule#spot-crypto
+            # Fees are lower for trades between stablecoins/FX, such as USDT/EUR
+            try:
+                get_pair_details(asset, intermediary_currency)  # Using asset as quote currency and intermediary as base currency
+                get_pair_details(settlement_currency, intermediary_currency)  # Using settlement currency as quote currency and intermediary as base currency
+                # If we made it here, then a route through the intermediary currency exists (we would have gotten an error with get_pair_details if it didn't)
+                # Start the first trade, selling the asset for the base intermediary currency
+                payload['type'] = 'sell'
+                payload['pair'] = f'{asset}{intermediary_currency}'
+                payload['volume'] = balance
+                prepare_and_make_trade(balance, asset, intermediary_currency, payload)
+                intermediary_balance = get_balance(intermediary_currency)
+                # Start the second trade, buying the quote settlement currency with the base intermediary currency balance
+                payload['type'] = 'buy'
+                payload['pair'] = f'{settlement_currency}{intermediary_currency}'
+                payload['volume'] = intermediary_balance
+                prepare_and_make_trade(balance, settlement_currency, intermediary_currency, payload)
+            except:
+                print(f'No path found through {intermediary_currency}')
+                continue
 
 if __name__ == '__main__':
     if env.TESTNET == '1':
         print('Testnet mode enabled. Autoconvert will now sleep forever. Zz Zz Zz...')
         time.sleep(999999999)
 
+    load_asset_names_and_ids()
+
     while 1:
         # First, get the settlement currency formatted correctly
         settlement_currency = env.SETTLEMENT_CURRENCY
+        load_balances()
 
         # Then, initiate the selling process for each supported asset unless it's already the settlement currency
         for asset in ['XBT', 'LTC', 'XMR']:
