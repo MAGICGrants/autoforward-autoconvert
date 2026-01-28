@@ -8,6 +8,7 @@ import env
 
 def get_balance(asset_id):
     balances = util.kraken_request('/0/private/Balance')
+    print(f'Balances: {balances}')
     balance = 0
     if asset_id in balances:
         balance = float(balances[asset_id])
