@@ -99,6 +99,7 @@ def attempt_sell(asset: str, settlement_currency: str):
                 payload['pair'] = f'{asset}{intermediary_currency}'
                 payload['volume'] = balance
                 prepare_and_make_trade(balance, asset, intermediary_currency, payload)
+                load_balances()
                 intermediary_balance = get_balance(intermediary_currency)
                 # Start the second trade, buying the quote settlement currency with the base intermediary currency balance
                 payload['type'] = 'buy'
