@@ -11,7 +11,7 @@ asset_name_to_id = {}
 def load_asset_names_and_ids():
     global asset_name_to_id
     result = util.kraken_request('/0/public/Assets')
-    asset_name_to_id = {asset['altname']: asset['assetid'] for asset in result}
+    asset_name_to_id = {asset_info['altname']: asset_id for asset_id, asset_info in result.items()}
 
 
 def load_balances():
